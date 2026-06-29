@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>JamatAgro — Farm Map Viewer (v7)</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1a2b22}
+  header{padding:9px 16px;background:#1a2b22;color:#fff;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  header h1{font-size:15px;margin:0;font-weight:700}
+  header span{font-size:11px;color:#b6c7bd}
+  .wrap{display:flex;height:calc(100vh - 42px);min-height:480px}
+  aside{width:262px;background:#fff;border-right:1px solid #dfe5e0;overflow-y:auto;padding:13px}
+  aside h2{font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:#5d6b63;margin:15px 0 6px}
+  aside h2:first-child{margin-top:0}
+  select,input[type=search]{width:100%;padding:7px;border:1px solid #cfd8c5;border-radius:6px;font-size:13px}
+  .btn{display:block;width:100%;text-align:center;padding:7px;border:1px solid #cfd8c5;border-radius:6px;background:#f4f6f4;font-size:12px;cursor:pointer;margin-top:6px}
+  .btn:hover{background:#eef2ee}
+  label.ck{display:flex;align-items:center;gap:7px;font-size:12.5px;margin:4px 0;cursor:pointer}
+  #map{flex:1;background:#eef1ee}
+  .legend-row{display:flex;align-items:center;gap:8px;font-size:12.5px;margin:4px 0}
+  .sw{width:14px;height:14px;border-radius:3px;flex:none;border:1px solid rgba(0,0,0,.2)}
+  .plotlabel{background:transparent;border:none;box-shadow:none;color:#fff;font-weight:700;font-size:11px;text-shadow:0 0 3px #000,0 0 3px #000}
+  .status{font-size:11px;color:#5d6b63;margin-top:8px;line-height:1.5}
+  .leaflet-popup-content{font-size:12.5px;line-height:1.5}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌱 JamatAgro — Farm Map Viewer</h1>
+  <span id="hdr">Demo — load your traced geometry to see the real farm</span>
+</header>
+<div class="wrap">
+  <aside>
+    <h2>Colour plots by</h2>
+    <select id="mode" onchange="render()">
+      <option value="use">Current land use</option>
+      <option value="vintage">Oil-palm vintage (year)</option>
+      <option value="manager">Manager</option>
+      <option value="cleared">Cleared status</option>
+      <option value="zone">Initial allocation zone</option>
+    </select>
+
+    <h2>Legend</h2>
+    <div id="legend"></div>
+
+    <h2>Operations layers</h2>
+    <label class="ck"><input type="checkbox" id="ck_act" checked onchange="render()"> Work done</label>
+    <label class="ck"><input type="checkbox" id="ck_inc" checked onchange="render()"> Incidents</label>
+    <select id="days" onchange="render()" style="margin-top:5px">
+      <option value="99999">All time</option>
+      <option value="30">Last 30 days</option>
+      <option value="7">Last 7 days</option>
+    </select>
+
+    <h2>View</h2>
+    <label class="ck"><input type="checkbox" id="ck_lite" checked onchange="liteChanged()"> Lite (no imagery — saves data)</label>
+    <label class="ck"><input type="checkbox" id="ck_street" onchange="setBase()"> Street map instead of satellite</label>
+    <label class="ck"><input type="checkbox" id="ck_see" onchange="seeThrough()"> See-through plots over satellite</label>
+    <label class="ck" style="gap:6px">Plot fill <input type="range" id="fill" min="0" max="100" value="80" oninput="setFill(this.value)" style="flex:1"></label>
+
+    <h2>Find plot</h2>
+    <input type="search" id="find" placeholder="Plot number…" oninput="findPlot(this.value)">
+
+    <h2>Data</h2>
+    <label class="btn">📐 Load geometry (.geojson / .json)<input type="file" accept=".geojson,.json" style="display:none" onchange="loadGeom(this.files[0])"></label>
+    <label class="btn">📋 Load attributes (.csv)<input type="file" accept=".csv" style="display:none" onchange="loadCsv(this.files[0],'attr')"></label>
+    <label class="btn">🗒 Load activity (.csv)<input type="file" accept=".csv" style="display:none" onchange="loadCsv(this.files[0],'act')"></label>
+    <div class="status" id="status"></div>
+  </aside>
+  <div id="map"></div>
+</div>
+
+<script>
+/* ============================================================
+   LIVE GOOGLE SHEET MODE (optional)
+   After you publish each sheet (File ▸ Share ▸ Publish to web ▸ CSV),
+   paste the two CSV links here. Leave blank to use the Load buttons.
+   ============================================================ */
+const REGISTER_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQiWG52Sc_IqsEvbf0AmNOYmCW8Wof88elt79zvPtfcq0rHSX4Sfv8w41ZYOTJsbVdKDYvxjxpjM7hs/pub?output=csv';   // JamatAgro Plot Register
+const ACTIVITY_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS68ealVuRhDHEksYgnngTfS3BlUa07rHQa0lhGIUzSWO2UleVy3bgyD1ZfDTCYhy1FycR3hdYUN5_L/pub?output=csv';   // JamatAgro Activity Log (Google Form)
+
+const ANCHOR=[7.242611,4.029740];
+const map=L.map('map').setView(ANCHOR,16);
+const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:21,attribution:'Esri'});
+const street=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'OSM'});
+function setBase(){ map.removeLayer(sat); map.removeLayer(street);
+  if(document.getElementById('ck_lite').checked) return;             // lite = no tiles
+  (document.getElementById('ck_street').checked?street:sat).addTo(map); }
+function liteChanged(){ if(document.getElementById('ck_lite').checked) document.getElementById('ck_see').checked=false; setBase(); }
+function setFill(v){ FILL=v/100; render(); }
+function seeThrough(){ const on=document.getElementById('ck_see').checked;
+  if(on){ document.getElementById('ck_lite').checked=false; setBase();           // need imagery behind
+    document.getElementById('fill').value=15; setFill(15); }
+  else { document.getElementById('fill').value=80; setFill(80); } }
+setBase();   // start in lite (no imagery); tick off Lite to load satellite
+
+const PALETTES={
+  use:{prop:'current_use',colors:{'Oil palm':'#2e7d32','Arable':'#e0cfa0','Factory':'#fb8c00','Livestock':'#424242'},fb:'#bdbdbd'},
+  vintage:{prop:'vintage_year',colors:{'2009':'#808a5a','2013 & 2017':'#7fd3e6','2018':'#ffd400','2021':'#ef9a9a','2024':'#9c27b0','2026':'#2962ff','2026 batch-2':'#e53935'},fb:'#cfcfcf'},
+  cleared:{prop:'cleared_status',colors:{'Planted':'#2e7d32','Uncleared':'#d9a441'},fb:'#cfcfcf'},
+  zone:{prop:'allocation_zone',colors:{'A':'#2e7d32','B':'#ffd400','C':'#8d6e63','D':'#424242'},fb:'#e0e0e0'},
+  manager:{prop:'manager',colors:{},fb:'#90a4ae',dynamic:true}
+};
+const MGR_PAL=['#1565c0','#6a1b9a','#00897b','#c62828','#ef6c00','#5d4037'];
+const INC_COL={Fire:'#e53935',Flood:'#1565c0',Pest:'#f0a500',Disease:'#f0a500',Theft:'#6a1b9a',Flood2:'#1565c0'};
+
+let attr={}, activity=[], geoLayer=null, centroids={}, FILL=0.8;
+const actLayer=L.layerGroup().addTo(map), incLayer=L.layerGroup().addTo(map);
+
+function colourFor(p){ const m=PALETTES[mode()]; const v=((attr[p]||{})[m.prop]||'').toString().trim();
+  if(m.dynamic){ if(!v)return m.fb; if(!(v in m.colors))m.colors[v]=MGR_PAL[Object.keys(m.colors).length%MGR_PAL.length]; return m.colors[v]; }
+  return m.colors[v]||m.fb; }
+function mode(){ return document.getElementById('mode').value; }
+function styleFor(f){ const c=colourFor(f.properties.plot_no); const see=FILL<0.35;
+  return {color:see?c:'#fff',weight:see?2.6:1.4,fillColor:c,fillOpacity:FILL}; }
+function popupHtml(p){ const a=attr[p]||{};
+  const rows=[['Use',a.current_use],['Vintage',a.vintage_year],['Cropping',a.cropping_type],['Manager',a.manager],['Allocation',a.allocation_zone],['Status',a.cleared_status],['Notes',a.notes]]
+    .filter(r=>r[1]).map(r=>`${r[0]}: ${r[1]}`).join('<br>');
+  return `<b>Plot ${p}</b><br>${rows||'<i>no attributes</i>'}`; }
+
+function drawGeo(fc){
+  if(geoLayer)map.removeLayer(geoLayer); centroids={};
+  geoLayer=L.geoJSON(fc,{style:styleFor,onEachFeature:(f,l)=>{ const p=f.properties.plot_no;
+    centroids[p]=l.getBounds().getCenter();
+    l.bindPopup(()=>popupHtml(p)); l.bindTooltip(String(p),{permanent:true,direction:'center',className:'plotlabel'}); }}).addTo(map);
+  try{ map.fitBounds(geoLayer.getBounds(),{padding:[20,20]}); }catch(e){}
+  render();
+}
+function daysAgo(d){ const t=new Date(d).getTime(); if(isNaN(t))return 0; return (Date.now()-t)/86400000; }
+// Map the Google Form's column names to the fields the map expects
+function normActivity(row){ const o={}; for(const k in row) o[k.trim().toLowerCase()]=row[k];
+  const pick=(...names)=>{ for(const n of names){ if(o[n])return o[n]; } for(const key in o){ for(const n of names){ if(key.indexOf(n)>=0 && o[key])return o[key]; } } return ''; };
+  const detail=pick('detail'), severity=pick('severity'), type=pick('typ','type');
+  const incSet=['fire','flood','pest','disease','theft'];
+  const isInc = severity!=='' || incSet.includes((detail||'').toLowerCase()) || /incident|vorfall/i.test(type);
+  return { plot_no:pick('plot_no','plot number','plot'), type:isInc?'Incident':'Work', detail:detail,
+    severity:severity, date:pick('date')||pick('zeitstempel','timestamp'), by:pick('your name','by','name'), note:pick('note') }; }
+function renderOps(){
+  actLayer.clearLayers(); incLayer.clearLayers();
+  const lim=+document.getElementById('days').value;
+  const showAct=document.getElementById('ck_act').checked, showInc=document.getElementById('ck_inc').checked;
+  activity.forEach(r=>{ const p=parseInt(r.plot_no); const c=centroids[p]; if(!c)return; if(daysAgo(r.date)>lim)return;
+    if((r.type||'').toLowerCase()==='incident'){ if(!showInc)return;
+      const col=INC_COL[(r.detail||'').trim()]||'#f0a500';
+      L.circleMarker([c.lat+0.0002,c.lng+0.0002],{radius:8,color:'#fff',weight:2,fillColor:col,fillOpacity:1})
+        .bindPopup(`<b>⚠ ${r.detail}</b>${r.note||''}<br>${r.severity||''} · ${r.date} · ${r.by||''}`).addTo(incLayer);
+    }else{ if(!showAct)return;
+      L.marker(c,{icon:L.divIcon({className:'',html:'<div style="background:#1a2b22;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;border:2px solid #fff">✓</div>',iconSize:[20,20]})})
+        .bindPopup(`<b>${r.detail}</b>Plot ${p}<br>${r.date} · ${r.by||''}`).addTo(actLayer);
+    }});
+}
+function render(){ if(geoLayer)geoLayer.eachLayer(l=>l.setStyle(styleFor(l.feature))); buildLegend(); renderOps(); }
+function buildLegend(){ const m=PALETTES[mode()]; const present=new Set();
+  Object.values(attr).forEach(a=>{const v=(a[m.prop]||'').toString().trim(); if(v)present.add(v);});
+  let entries=m.dynamic?[...present]:Object.keys(m.colors).filter(k=>present.has(k)||Object.keys(attr).length===0);
+  document.getElementById('legend').innerHTML=entries.map(k=>`<div class="legend-row"><span class="sw" style="background:${m.colors[k]||'#90a4ae'}"></span>${k}</div>`).join('')
+    +`<div class="legend-row"><span class="sw" style="background:${m.fb}"></span>—/unknown</div>`; }
+function findPlot(v){ v=parseInt(v); if(!geoLayer||isNaN(v))return; geoLayer.eachLayer(l=>{ if(l.feature.properties.plot_no===v){ map.fitBounds(l.getBounds(),{maxZoom:19}); l.openPopup(); }}); }
+
+function loadGeom(file){ if(!file)return; const r=new FileReader();
+  r.onload=()=>{ try{ const j=JSON.parse(r.result); const fc=j.type==='FeatureCollection'?j:(j.plots||null);
+    if(!fc)return alert('Not a geometry/project file.'); drawGeo(fc);
+    document.getElementById('hdr').textContent=fc.features.length+' plots loaded'; setStatus(); }catch(e){ alert('Could not read file.'); } }; r.readAsText(file); }
+function loadCsv(file,kind){ if(!file)return; Papa.parse(file,{header:true,skipEmptyLines:true,complete:res=>applyCsv(res.data,kind)}); }
+function applyCsv(rows,kind){ if(kind==='attr'){ attr={}; rows.forEach(r=>{const p=parseInt(r.plot_no); if(!isNaN(p))attr[p]=r;}); }
+  else{ activity=rows.map(normActivity).filter(x=>x.plot_no); } render(); setStatus(); }
+function setStatus(){ document.getElementById('status').textContent=
+  Object.keys(attr).length+' attrs · '+activity.length+' log rows · '+(geoLayer?geoLayer.getLayers().length:0)+' plots'; }
+
+// Placeholder grid of all 98 plots (until real geometry is traced/loaded)
+function placeholderGrid(){ const f=[]; const cell=0.0007, sLat=ANCHOR[0]+0.0042, sLon=ANCHOR[1]-0.0035;
+  for(let n=1;n<=98;n++){ const r=Math.floor((n-1)/10), c=(n-1)%10; const lat=sLat-r*cell, lon=sLon+c*cell, s=cell*0.9;
+    f.push({type:'Feature',properties:{plot_no:n},geometry:{type:'Polygon',coordinates:[[[lon,lat],[lon+s,lat],[lon+s,lat-s],[lon,lat-s],[lon,lat]]]}}); }
+  drawGeo({type:'FeatureCollection',features:f}); }
+
+// live mode
+if(REGISTER_CSV_URL) Papa.parse(REGISTER_CSV_URL,{download:true,header:true,skipEmptyLines:true,complete:r=>{
+  applyCsv(r.data,'attr'); if(!geoLayer) placeholderGrid();
+  document.getElementById('hdr').textContent='Live from Google Sheets · placeholder grid — load traced geometry for true shapes'; }});
+if(ACTIVITY_CSV_URL) Papa.parse(ACTIVITY_CSV_URL,{download:true,header:true,skipEmptyLines:true,complete:r=>applyCsv(r.data,'act')});
+
+// demo on first open
+function demo(){ const c=ANCHOR,f=[]; let n=1; const uses=[['Oil palm','2018'],['Oil palm','2009'],['Arable',''],['Factory',''],['Livestock',''],['Oil palm','2026']];
+  for(let r=0;r<2;r++)for(let cc=0;cc<3;cc++){ const lat=c[0]+0.003-r*0.0016, lon=c[1]-0.003+cc*0.0016;
+    f.push({type:'Feature',properties:{plot_no:n},geometry:{type:'Polygon',coordinates:[[[lon,lat],[lon+0.0014,lat],[lon+0.0014,lat-0.0014],[lon,lat-0.0014],[lon,lat]]]}});
+    attr[n]={plot_no:n,current_use:uses[n-1][0],vintage_year:uses[n-1][1],manager:n<3?'Mr Hassan':'',cleared_status:uses[n-1][0]==='Arable'?'Uncleared':'Planted'}; n++; }
+  activity=[{plot_no:1,type:'Work',detail:'Weeding',date:new Date().toISOString().slice(0,10),by:'Musa'},
+            {plot_no:5,type:'Incident',detail:'Fire',severity:'Minor',date:new Date().toISOString().slice(0,10),by:'Crew',note:'Demo'}];
+  drawGeo({type:'FeatureCollection',features:f}); setStatus(); }
+if(!REGISTER_CSV_URL) demo();
+</script>
+</body>
+</html>
