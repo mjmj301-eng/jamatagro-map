@@ -178,11 +178,17 @@ function placeholderGrid(){ const f=[]; const cell=0.0007, sLat=ANCHOR[0]+0.0042
     f.push({type:'Feature',properties:{plot_no:n},geometry:{type:'Polygon',coordinates:[[[lon,lat],[lon+s,lat],[lon+s,lat-s],[lon,lat-s],[lon,lat]]]}}); }
   drawGeo({type:'FeatureCollection',features:f}); }
 
-// live mode
-if(REGISTER_CSV_URL) Papa.parse(REGISTER_CSV_URL,{download:true,header:true,skipEmptyLines:true,complete:r=>{
-  applyCsv(r.data,'attr'); if(!geoLayer) placeholderGrid();
-  document.getElementById('hdr').textContent='Live from Google Sheets · placeholder grid — load traced geometry for true shapes'; }});
-if(ACTIVITY_CSV_URL) Papa.parse(ACTIVITY_CSV_URL,{download:true,header:true,skipEmptyLines:true,complete:r=>applyCsv(r.data,'act')});
+// live mode — draw the placeholder grid IMMEDIATELY so plots always show,
+// then recolour it when the Register CSV arrives.
+if(REGISTER_CSV_URL){
+  placeholderGrid();
+  document.getElementById('hdr').textContent='Live · placeholder grid (trace geometry for true plot shapes)';
+  Papa.parse(REGISTER_CSV_URL,{download:true,header:true,skipEmptyLines:true,
+    complete:r=>applyCsv(r.data,'attr'),
+    error:()=>{ document.getElementById('status').textContent='⚠ Could not load Register sheet — check the published link.'; }});
+}
+if(ACTIVITY_CSV_URL) Papa.parse(ACTIVITY_CSV_URL,{download:true,header:true,skipEmptyLines:true,
+  complete:r=>applyCsv(r.data,'act'), error:()=>{} });
 
 // demo on first open
 function demo(){ const c=ANCHOR,f=[]; let n=1; const uses=[['Oil palm','2018'],['Oil palm','2009'],['Arable',''],['Factory',''],['Livestock',''],['Oil palm','2026']];
