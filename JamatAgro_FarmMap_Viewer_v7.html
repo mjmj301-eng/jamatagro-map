@@ -83,6 +83,7 @@
    ============================================================ */
 const REGISTER_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQiWG52Sc_IqsEvbf0AmNOYmCW8Wof88elt79zvPtfcq0rHSX4Sfv8w41ZYOTJsbVdKDYvxjxpjM7hs/pub?output=csv';   // JamatAgro Plot Register
 const ACTIVITY_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS68ealVuRhDHEksYgnngTfS3BlUa07rHQa0lhGIUzSWO2UleVy3bgyD1ZfDTCYhy1FycR3hdYUN5_L/pub?output=csv';   // JamatAgro Activity Log (Google Form)
+const GEOMETRY_URL     = 'JamatAgro_PlotGeometry.geojson';   // sits next to this file in the repo; auto-loads when hosted
 
 const ANCHOR=[7.242611,4.029740];
 const map=L.map('map').setView(ANCHOR,16);
@@ -189,6 +190,15 @@ if(REGISTER_CSV_URL){
 }
 if(ACTIVITY_CSV_URL) Papa.parse(ACTIVITY_CSV_URL,{download:true,header:true,skipEmptyLines:true,
   complete:r=>applyCsv(r.data,'act'), error:()=>{} });
+
+// Auto-load the traced geometry from the repo (https). Replaces the placeholder grid.
+if(GEOMETRY_URL){
+  fetch(GEOMETRY_URL).then(r=>r.ok?r.json():Promise.reject()).then(j=>{
+    const fc=j.type==='FeatureCollection'?j:(j.plots||null);
+    if(fc && fc.features && fc.features.length){ drawGeo(fc);
+      document.getElementById('hdr').textContent='Live · '+fc.features.length+' plots loaded from repo'; }
+  }).catch(()=>{});   // fails silently offline (file://) → keeps placeholder / Load button
+}
 
 // demo on first open
 function demo(){ const c=ANCHOR,f=[]; let n=1; const uses=[['Oil palm','2018'],['Oil palm','2009'],['Arable',''],['Factory',''],['Livestock',''],['Oil palm','2026']];
