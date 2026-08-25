@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JamatAgro · Farm Calendar — Daily Work List (Slice 1 demo)</title>
+<style>
+  :root{--ink:#1a2b22;--ink2:#2f4a3c;--line:#e2e6e3;--muted:#6b7a72;--bg:#f6f8f6;
+        --red:#c0392b;--redbg:#fdecea;--amber:#b9770e;--amberbg:#fdf3e2;--green:#1f7a4d;--greenbg:#e7f4ec;--grey:#8a978f;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  header{background:var(--ink);color:#fff;padding:12px 18px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  header b{font-size:17px;letter-spacing:.2px}
+  header span{color:#b7c9bf;font-size:13px}
+  .wrap{max-width:1000px;margin:0 auto;padding:16px}
+  .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:end;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+  .controls label{display:flex;flex-direction:column;font-size:11px;color:var(--muted);gap:4px;text-transform:uppercase;letter-spacing:.04em}
+  .controls select,.controls input[type=date]{font:inherit;font-size:14px;padding:6px 8px;border:1px solid #cdd6d0;border-radius:7px;color:var(--ink);background:#fff}
+  .controls .chk{flex-direction:row;align-items:center;gap:6px;text-transform:none;font-size:13px;color:var(--ink)}
+  .summary{display:flex;gap:18px;flex-wrap:wrap;margin:4px 2px 14px;font-size:14px}
+  .summary b{font-size:18px}
+  .pill{padding:1px 8px;border-radius:20px;font-size:12px;font-weight:600}
+  .pill.red{background:var(--redbg);color:var(--red)} .pill.amber{background:var(--amberbg);color:var(--amber)}
+  .pill.green{background:var(--greenbg);color:var(--green)} .pill.grey{background:#eef1ef;color:var(--grey)}
+  .mgr{margin:18px 0 8px;font-size:15px;font-weight:700;color:var(--ink2);border-bottom:2px solid var(--line);padding-bottom:4px}
+  .plot{background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;overflow:hidden}
+  .plot h4{margin:0;padding:9px 12px;background:#f0f4f1;font-size:14px;display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line)}
+  .plot h4 small{color:var(--muted);font-weight:500}
+  .task{display:grid;grid-template-columns:74px 1fr auto auto;gap:10px;align-items:center;padding:9px 12px;border-top:1px solid #eef1ef}
+  .task:first-of-type{border-top:none}
+  .task .d{font-variant-numeric:tabular-nums;font-size:12px;color:var(--muted)}
+  .task .t{font-size:14px}.task .t small{display:block;color:var(--muted);font-size:12px}
+  .task.done .t{color:var(--grey);text-decoration:line-through}
+  .st{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
+  .st.overdue{background:var(--redbg);color:var(--red)}.st.due_soon{background:var(--amberbg);color:var(--amber)}
+  .st.upcoming{background:#eef1ef;color:var(--grey)}.st.done{background:var(--greenbg);color:var(--green)}
+  .crit{color:var(--red);font-weight:700}
+  .act{display:flex;gap:4px}
+  .act button{font:inherit;font-size:12px;border:1px solid #cdd6d0;background:#fff;border-radius:6px;padding:3px 7px;cursor:pointer;color:var(--ink2)}
+  .act button:hover{background:#eef4ef}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:14px}
+  .panel h3{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .health .row{font-size:13px;color:var(--red);padding:4px 0;border-top:1px solid #f2e3e1}
+  .health .ok{color:var(--green)}
+  textarea{width:100%;min-height:150px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;border:1px solid #cdd6d0;border-radius:8px;padding:10px;color:var(--ink);white-space:pre;resize:vertical}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .btn{font:inherit;font-size:13px;border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:8px;padding:7px 12px;cursor:pointer}
+  .btn.sec{background:#fff;color:var(--ink)}
+  .note{font-size:12px;color:var(--muted);margin:2px 2px 14px}
+  .empty{color:var(--muted);font-size:14px;padding:20px;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <b>JamatAgro · Farm Calendar</b>
+  <span>Daily work list (V3) — Slice 1 demo · oil-palm establishment</span>
+</header>
+<div class="wrap">
+
+  <div class="controls">
+    <label>As of date
+      <input type="date" id="asof" value="2026-07-26">
+    </label>
+    <label>Manager
+      <select id="mgr"><option value="">All managers</option></select>
+    </label>
+    <label>Scope
+      <select id="scope">
+        <option value="today">Today + overdue</option>
+        <option value="week" selected>This week + overdue</option>
+        <option value="month">Next 30 days</option>
+        <option value="all">All open</option>
+      </select>
+    </label>
+    <label class="chk"><input type="checkbox" id="critonly"> Critical only</label>
+    <label class="chk"><input type="checkbox" id="showdone" checked> Show done</label>
+  </div>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="panel health" id="health"></div>
+
+  <div id="list"></div>
+
+  <div class="panel">
+    <h3>WhatsApp export (§8 contract)</h3>
+    <div class="note">Plain text, no tables · one block per manager for the current scope · critical tasks prefixed ‼</div>
+    <textarea id="wa" readonly></textarea>
+    <div class="btnrow">
+      <button class="btn" id="copywa">Copy to clipboard</button>
+      <button class="btn sec" id="exportlog">Export updated task_log.csv</button>
+      <button class="btn sec" id="reset">Reset session edits</button>
+    </div>
+  </div>
+
+  <div class="note">This demo loads the same four files the module ships with (<code>JamatAgro_CropTemplates_v1.json</code>, <code>JamatAgro_CropCycles_v1.csv</code>, <code>JamatAgro_TaskLog_v1.csv</code>, engine) — inlined here so it runs offline. Check-offs/shifts are held in memory and appended to the exported task_log, exactly like the map viewer's load/export workflow.</div>
+
+</div>
+
+<script>
+/* ===== engine (JamatAgro_CalendarEngine_v1.js, inlined verbatim) ===== */
+var JamatCal=(function(){'use strict';
+function parseDate(s){if(!s)return null;var p=String(s).slice(0,10).split('-');if(p.length<3)return null;var d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2]));return isNaN(d.getTime())?null:d;}
+function iso(d){return d.toISOString().slice(0,10);}
+function addDays(d,n){var x=new Date(d.getTime());x.setUTCDate(x.getUTCDate()+n);return x;}
+function diffDays(a,b){return Math.round((a.getTime()-b.getTime())/86400000);}
+function parseVintageYear(v){var m=String(v==null?'':v).match(/\d{4}/);return m?+m[0]:null;}
+function csvParse(text){var rows=[],row=[],field='',i=0,inQ=false,c;text=String(text).replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+ for(i=0;i<text.length;i++){c=text[i];if(inQ){if(c==='"'){if(text[i+1]==='"'){field+='"';i++;}else inQ=false;}else field+=c;}
+ else if(c==='"')inQ=true;else if(c===','){row.push(field);field='';}else if(c==='\n'){row.push(field);rows.push(row);row=[];field='';}else field+=c;}
+ if(field.length||row.length){row.push(field);rows.push(row);}if(!rows.length)return[];
+ var head=rows.shift().map(function(h){return h.trim();});
+ return rows.filter(function(r){return r.some(function(x){return x!=='';});}).map(function(r){var o={};head.forEach(function(h,j){o[h]=(r[j]==null?'':r[j]).trim();});return o;});}
+function indexTemplates(t){var b={};(t||[]).forEach(function(x){b[x.template_id+'@'+x.version]=x;});return b;}
+function inferPhase(tp,age,ov){if(ov)return ov;for(var k=0;k<tp.phases.length;k++){var ph=tp.phases[k];var lo=ph.entry?ph.entry.offset_days:-Infinity;var hi=ph.exit?ph.exit.offset_days:Infinity;if(age>=lo&&age<hi)return ph.phase_id;}var last=tp.phases[tp.phases.length-1];if(last&&!last.exit&&age>=(last.entry?last.entry.offset_days:0))return last.phase_id;return null;}
+function effectiveEvents(log){var m={};(log||[]).forEach(function(e){var k=e.cycle_id+'|'+e.task_code+'|'+e.occurrence_index;if(!m[k]||String(e.event_ts)>String(m[k].event_ts))m[k]=e;});return m;}
+function validateCycle(c,byKey,plotSet){var errs=[];if(plotSet&&!plotSet.has(String(c.plot_no)))errs.push('plot_no '+c.plot_no+' not found in register/geometry');var tk=(c.template_version&&c.template_version.indexOf('@')>=0)?c.template_version:null;if(!tk||!byKey[tk]){errs.push('template_version "'+c.template_version+'" not found');}else{var t=byKey[tk];if(c.crop&&t.maps_to_current_use&&c.crop!==t.maps_to_current_use)errs.push('crop "'+c.crop+'" != template current_use "'+t.maps_to_current_use+'"');if(c.anchor_type&&t.anchors.indexOf(c.anchor_type)<0)errs.push('anchor_type "'+c.anchor_type+'" not in template anchors');}if(!parseDate(c.anchor_date))errs.push('anchor_date "'+c.anchor_date+'" invalid');return errs;}
+function resolveAnchors(cycle,tp,eff){var a={};a[cycle.anchor_type]={date:parseDate(cycle.anchor_date),status:cycle.anchor_status||'planned'};tp.tasks.forEach(function(t){if(!t.sets_anchor)return;for(var k in eff){var e=eff[k];if(e.cycle_id===cycle.cycle_id&&e.task_code===t.task_code&&e.action==='done'&&e.done_date){a[t.sets_anchor]={date:parseDate(e.done_date),status:'actual',source:e.entry_id};}}});return a;}
+function expandTask(task,anchors,planStart){var out=[],a=anchors[task.anchor];if(!a||!a.date)return out;if(task.type==='offset'){out.push({occurrence_index:0,date:addDays(a.date,task.offset_days||0)});}else{return out;}return out.filter(function(o){return !planStart||o.date.getTime()>=planStart.getTime();});}
+function generate(opts){opts=opts||{};var today=opts.today?parseDate(opts.today):parseDate(iso(new Date()));var byKey=indexTemplates(opts.templates);var plotSet=opts.plots?new Set(opts.plots.map(String)):null;var eff=effectiveEvents(opts.taskLog||[]);var validation=[],occ=[];
+ (opts.cycles||[]).forEach(function(c){var errs=validateCycle(c,byKey,plotSet);if(errs.length){validation.push({cycle_id:c.cycle_id,plot_no:c.plot_no,errors:errs});return;}if(['planned','active'].indexOf(c.status)<0)return;
+ var t=byKey[c.template_version];var anchors=resolveAnchors(c,t,eff);var primary=anchors[c.anchor_type];var age=diffDays(today,primary.date);var phase=inferPhase(t,age,c.phase_override||'');var planStart=parseDate(c.plan_start_date)||primary.date;
+ t.tasks.forEach(function(task){if(task.phase&&task.phase!==phase)return;expandTask(task,anchors,planStart).forEach(function(o){var key=c.cycle_id+'|'+task.task_code+'|'+o.occurrence_index;var e=eff[key];var sched=o.date,status,dd=null,delta=null;
+ if(e&&e.action==='skipped'){status='skipped';}else if(e&&e.action==='done'){status='done';dd=parseDate(e.done_date);if(dd)delta=diffDays(dd,o.date);}else{if(e&&e.action==='shifted'&&e.new_date){var nd=parseDate(e.new_date);if(nd)sched=nd;}if(sched.getTime()<today.getTime())status='overdue';else if(diffDays(sched,today)<=7)status='due_soon';else status='upcoming';}
+ occ.push({cycle_id:c.cycle_id,plot_no:c.plot_no,crop:c.crop,manager:c.manager||'(unassigned)',phase:phase,task_code:task.task_code,label:task.label,category:task.category,activity_detail:task.activity_detail||'',occurrence_index:o.occurrence_index,planned_date:iso(o.date),scheduled_date:iso(sched),window_days:task.window_days||0,inputs:task.inputs||'',critical:!!task.critical,status:status,done_date:dd?iso(dd):'',delta_days:delta,anchor_status:primary.status,area_ha:c.area_ha||''});});});});
+ occ.sort(function(a,b){return a.scheduled_date<b.scheduled_date?-1:a.scheduled_date>b.scheduled_date?1:0;});return{today:iso(today),occurrences:occ,validation:validation};}
+return{parseDate:parseDate,iso:iso,addDays:addDays,diffDays:diffDays,csvParse:csvParse,parseVintageYear:parseVintageYear,inferPhase:inferPhase,generate:generate};})();
+
+/* ===== inlined sample data (the three shipped files) ===== */
+var TEMPLATES={"templates":[{"template_id":"oil_palm","maps_to_current_use":"Oil palm","version":"1.0","display_name":"Oil palm (plantation)","cycle_kind":"perennial","anchors":["field_planting"],
+ "default_seasons":{"major":{"anchor":"field_planting","window":["04-01","05-31"]},"minor":{"anchor":"field_planting","window":["08-15","09-30"]}},
+ "phases":[{"phase_id":"establishment","entry":{"anchor":"field_planting","offset_days":-60},"exit":{"anchor":"field_planting","offset_days":365}},{"phase_id":"immature","entry":{"anchor":"field_planting","offset_days":365},"exit":{"anchor":"field_planting","offset_days":1460}},{"phase_id":"mature","entry":{"anchor":"field_planting","offset_days":1460},"exit":null}],
+ "tasks":[
+ {"task_code":"land_clear_prep","label":"Land clearing & burning-free prep","category":"infrastructure","activity_detail":"Clearing","type":"offset","anchor":"field_planting","offset_days":-60,"window_days":14,"phase":"establishment","inputs":"cutlasses, no burning","critical":true},
+ {"task_code":"lining_pegging","label":"Lining & pegging (9 m triangular, ~143/ha)","category":"infrastructure","activity_detail":"Other","type":"offset","anchor":"field_planting","offset_days":-30,"window_days":10,"phase":"establishment","inputs":"pegs, measuring line","critical":false},
+ {"task_code":"hole_digging","label":"Hole digging (60x60x60 cm)","category":"infrastructure","activity_detail":"Other","type":"offset","anchor":"field_planting","offset_days":-14,"window_days":7,"phase":"establishment","inputs":"diggers","critical":false},
+ {"task_code":"transplant","label":"Transplant seedlings to field","category":"planting","activity_detail":"Planting","type":"offset","anchor":"field_planting","offset_days":0,"window_days":14,"phase":"establishment","inputs":"nursery-hardened seedlings, ~143/ha","sets_anchor":"field_planting","critical":true},
+ {"task_code":"cover_crop","label":"Cover crop establishment (Pueraria)","category":"planting","activity_detail":"Planting","type":"offset","anchor":"field_planting","offset_days":14,"window_days":14,"phase":"establishment","inputs":"Pueraria seed","critical":false},
+ {"task_code":"beat_up","label":"Beat-up / replace failed seedlings","category":"planting","activity_detail":"Planting","type":"offset","anchor":"field_planting","offset_days":60,"window_days":21,"phase":"establishment","inputs":"reserve seedlings 5-10%","critical":false}]}]};
+
+var CYCLES_CSV=`cycle_id,plot_no,crop,template_version,anchor_type,anchor_date,anchor_status,plan_start_date,phase_override,season,vintage_year,area_ha,manager,status,notes
+CYC-2026-014,35,Oil palm,oil_palm@1.0,field_planting,2026-09-01,planned,2026-06-01,,minor,2026,2.4,Mr Hassan,active,2026 expansion block (plot 35)
+CYC-2026-015,36,Oil palm,oil_palm@1.0,field_planting,2026-09-15,planned,2026-06-01,,minor,2026,3.1,Mr Hassan,active,2026 expansion block (plot 36)
+CYC-2026-016,37,Oil palm,oil_palm@1.0,field_planting,2026-08-20,planned,2026-06-01,,minor,2026,1.8,Dr Iginla,active,2026 expansion block (plot 37)
+CYC-ONB-001,1,Oil palm,oil_palm@1.0,field_planting,2018-04-15,actual,2026-07-26,,perennial,2018,3.1,Dr Iginla,active,Onboarded 2018 mature - proves no historical flood
+CYC-ONB-057,57,Oil palm,oil_palm@1.0,field_planting,2024-05-01,actual,2026-07-26,,perennial,2024,2.0,Dr Iginla,active,Onboarded 2024 immature
+CYC-2026-099,999,Oil palm,oil_palm@2.0,field_planting,2026-09-01,planned,2026-06-01,,minor,2026,1.5,Mr Hassan,active,BAD ROW - template @2.0 missing AND plot 999 unknown`;
+
+var TASKLOG_CSV=`entry_id,event_ts,cycle_id,task_code,occurrence_index,scheduled_date,action,new_date,done_date,anchor_name,by,source_entry_id,notes
+T-000001,2026-07-20T09:00:00,CYC-2026-014,land_clear_prep,0,2026-07-03,done,,2026-07-19,,Musa,,Cleared - 16 days late (rain delay)`;
+
+var PLOTS=[]; for(var _p=1;_p<=98;_p++)PLOTS.push(_p);
+var LOGCOLS=["entry_id","event_ts","cycle_id","task_code","occurrence_index","scheduled_date","action","new_date","done_date","anchor_name","by","source_entry_id","notes"];
+
+/* ===== app ===== */
+var baseCycles=JamatCal.csvParse(CYCLES_CSV);
+var baseLog=JamatCal.csvParse(TASKLOG_CSV);
+var sessionLog=[];
+var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fmt(iso){var p=iso.split("-");return (+p[2])+" "+MON[+p[1]-1];}
+function el(id){return document.getElementById(id);}
+
+function currentLog(){return baseLog.concat(sessionLog);}
+function runGen(){return JamatCal.generate({templates:TEMPLATES.templates,cycles:baseCycles,taskLog:currentLog(),plots:PLOTS,today:el("asof").value});}
+
+function inScope(o,asof,scope){
+  if(scope==="all")return o.status!=="skipped";
+  var end=new Date(asof);var days=scope==="today"?0:(scope==="week"?6:29);
+  var endIso=JamatCal.iso(JamatCal.addDays(JamatCal.parseDate(asof),days));
+  if(o.status==="overdue")return true;
+  if(o.status==="done")return o.scheduled_date<=endIso && o.scheduled_date>=JamatCal.iso(JamatCal.addDays(JamatCal.parseDate(asof),-30));
+  return o.scheduled_date>=asof && o.scheduled_date<=endIso;
+}
+
+function filtered(res){
+  var asof=el("asof").value,scope=el("scope").value,mgr=el("mgr").value,crit=el("critonly").checked,showdone=el("showdone").checked;
+  return res.occurrences.filter(function(o){
+    if(mgr&&o.manager!==mgr)return false;
+    if(crit&&!o.critical)return false;
+    if(!showdone&&o.status==="done")return false;
+    return inScope(o,asof,scope);
+  });
+}
+
+function render(){
+  var res=runGen();
+  // manager dropdown (populate once)
+  var sel=el("mgr");
+  if(sel.options.length<=1){
+    var mgrs=[...new Set(res.occurrences.map(function(o){return o.manager;}))].sort();
+    mgrs.forEach(function(m){var o=document.createElement("option");o.value=m;o.textContent=m;sel.appendChild(o);});
+  }
+  var occ=filtered(res);
+  // summary
+  var overdue=occ.filter(function(o){return o.status==="overdue";}).length;
+  var due=occ.filter(function(o){return o.status==="due_soon";}).length;
+  var done=occ.filter(function(o){return o.status==="done";}).length;
+  el("summary").innerHTML='<div><b>'+occ.length+'</b> tasks in scope</div>'+
+    '<div><span class="pill red">'+overdue+' overdue</span></div>'+
+    '<div><span class="pill amber">'+due+' due ≤7d</span></div>'+
+    '<div><span class="pill green">'+done+' done</span></div>';
+  // health
+  var h=el("health");
+  if(res.validation.length){
+    h.innerHTML='<h3>Data health — '+res.validation.length+' cycle(s) excluded</h3>'+
+      res.validation.map(function(v){return '<div class="row">✗ '+v.cycle_id+' (plot '+v.plot_no+'): '+v.errors.join(' ; ')+'</div>';}).join('');
+  }else{h.innerHTML='<h3>Data health</h3><div class="row ok">✓ all cycles resolved</div>';}
+  // list grouped by manager -> plot
+  var list=el("list");
+  if(!occ.length){list.innerHTML='<div class="empty">No tasks in this scope. Widen the scope or change the date.</div>';buildWa(occ);return;}
+  var byMgr={};occ.forEach(function(o){(byMgr[o.manager]=byMgr[o.manager]||[]).push(o);});
+  var html="";
+  Object.keys(byMgr).sort().forEach(function(m){
+    html+='<div class="mgr">'+m+' · '+byMgr[m].length+' task(s)</div>';
+    var byPlot={};byMgr[m].forEach(function(o){(byPlot[o.plot_no]=byPlot[o.plot_no]||[]).push(o);});
+    Object.keys(byPlot).sort(function(a,b){return a-b;}).forEach(function(pn){
+      var rows=byPlot[pn];var area=rows[0].area_ha;var phase=rows[0].phase;
+      html+='<div class="plot"><h4><span>Plot '+pn+' · '+rows[0].crop+'</span><small>'+(area?area+' ha · ':'')+phase+'</small></h4>';
+      rows.forEach(function(o){
+        var stlabel=o.status==="done"?("done "+(o.delta_days!=null?(o.delta_days>0?"+"+o.delta_days+"d":o.delta_days+"d"):"")):o.status.replace("_"," ");
+        html+='<div class="task '+(o.status==="done"?"done":"")+'">'+
+          '<div class="d">'+fmt(o.scheduled_date)+'</div>'+
+          '<div class="t">'+(o.critical?'<span class="crit">‼ </span>':'')+o.label+'<small>'+o.inputs+(o.activity_detail?' · matches "'+o.activity_detail+'"':'')+'</small></div>'+
+          '<div><span class="st '+o.status+'">'+stlabel+'</span></div>'+
+          '<div class="act">'+(o.status==="done"?'':(
+             '<button data-a="done" data-c="'+o.cycle_id+'" data-t="'+o.task_code+'" data-i="'+o.occurrence_index+'" data-s="'+o.scheduled_date+'">✓</button>'+
+             '<button data-a="shift" data-c="'+o.cycle_id+'" data-t="'+o.task_code+'" data-i="'+o.occurrence_index+'" data-s="'+o.scheduled_date+'">+7d</button>'+
+             '<button data-a="skip" data-c="'+o.cycle_id+'" data-t="'+o.task_code+'" data-i="'+o.occurrence_index+'" data-s="'+o.scheduled_date+'">skip</button>'
+          ))+'</div></div>';
+      });
+      html+='</div>';
+    });
+  });
+  list.innerHTML=html;
+  list.querySelectorAll(".act button").forEach(function(b){b.addEventListener("click",onAction);});
+  buildWa(occ);
+}
+
+function onAction(e){
+  var b=e.currentTarget,a=b.dataset.a;
+  var ev={entry_id:"S-"+Date.now()+"-"+Math.floor(Math.random()*999),event_ts:new Date().toISOString().slice(0,19),
+    cycle_id:b.dataset.c,task_code:b.dataset.t,occurrence_index:b.dataset.i,scheduled_date:b.dataset.s,
+    action:"",new_date:"",done_date:"",anchor_name:"",by:"demo",source_entry_id:"",notes:"via demo"};
+  if(a==="done"){ev.action="done";ev.done_date=el("asof").value;}
+  else if(a==="shift"){ev.action="shifted";ev.new_date=JamatCal.iso(JamatCal.addDays(JamatCal.parseDate(b.dataset.s),7));}
+  else if(a==="skip"){ev.action="skipped";}
+  sessionLog.push(ev);
+  render();
+}
+
+function buildWa(occ){
+  var asof=el("asof").value;
+  var open=occ.filter(function(o){return o.status!=="done";});
+  var byMgr={};open.forEach(function(o){(byMgr[o.manager]=byMgr[o.manager]||[]).push(o);});
+  var out="";
+  Object.keys(byMgr).sort().forEach(function(m){
+    out+="JamatAgro — "+m+" — "+fmt(asof)+"\n";
+    var byPlot={};byMgr[m].forEach(function(o){(byPlot[o.plot_no]=byPlot[o.plot_no]||[]).push(o);});
+    Object.keys(byPlot).sort(function(a,b){return a-b;}).forEach(function(pn){
+      var r=byPlot[pn];out+="Plot "+pn+(r[0].area_ha?" ("+r[0].area_ha+" ha)":"")+"\n";
+      r.forEach(function(o){out+="  • "+fmt(o.scheduled_date)+" — "+(o.critical?"‼ ":"")+o.label+(o.inputs?" ["+o.inputs+"]":"")+"\n";});
+    });
+    out+="\n";
+  });
+  el("wa").value=out.trim()||"(no open tasks in scope)";
+}
+
+function serializeLog(){
+  var rows=currentLog();
+  var head=LOGCOLS.join(",");
+  var body=rows.map(function(r){return LOGCOLS.map(function(c){var v=(r[c]==null?"":String(r[c]));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(",");}).join("\n");
+  return head+"\n"+body+"\n";
+}
+function download(name,text){var b=new Blob([text],{type:"text/csv"});var u=URL.createObjectURL(b);var a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(function(){URL.revokeObjectURL(u);},500);}
+
+el("asof").addEventListener("change",render);
+el("mgr").addEventListener("change",render);
+el("scope").addEventListener("change",render);
+el("critonly").addEventListener("change",render);
+el("showdone").addEventListener("change",render);
+el("copywa").addEventListener("click",function(){var t=el("wa");t.select();try{document.execCommand("copy");}catch(e){}if(navigator.clipboard)navigator.clipboard.writeText(t.value);this.textContent="Copied ✓";var self=this;setTimeout(function(){self.textContent="Copy to clipboard";},1200);});
+el("exportlog").addEventListener("click",function(){download("JamatAgro_TaskLog_v1.csv",serializeLog());});
+el("reset").addEventListener("click",function(){sessionLog=[];render();});
+
+render();
+</script>
+</body>
+</html>

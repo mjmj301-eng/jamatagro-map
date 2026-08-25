@@ -1,0 +1,7 @@
+cycle_id,plot_no,crop,template_version,anchor_type,anchor_date,anchor_status,plan_start_date,phase_override,season,vintage_year,area_ha,manager,status,notes
+CYC-2026-014,35,Oil palm,oil_palm@1.0,field_planting,2026-09-01,planned,2026-06-01,,minor,2026,2.4,Mr Hassan,active,2026 expansion block (plot 35)
+CYC-2026-015,36,Oil palm,oil_palm@1.0,field_planting,2026-09-15,planned,2026-06-01,,minor,2026,3.1,Mr Hassan,active,2026 expansion block (plot 36)
+CYC-2026-016,37,Oil palm,oil_palm@1.0,field_planting,2026-08-20,planned,2026-06-01,,minor,2026,1.8,Dr Iginla,active,2026 expansion block (plot 37)
+CYC-ONB-001,1,Oil palm,oil_palm@1.0,field_planting,2018-04-15,actual,2026-07-26,,perennial,2018,3.1,Dr Iginla,active,Onboarded from vintage 2018 (mature) - proves no historical flood
+CYC-ONB-057,57,Oil palm,oil_palm@1.0,field_planting,2024-05-01,actual,2026-07-26,,perennial,2024,2.0,Dr Iginla,active,Onboarded from vintage 2024 (immature yr 2)
+CYC-2026-099,999,Oil palm,oil_palm@2.0,field_planting,2026-09-01,planned,2026-06-01,,minor,2026,1.5,Mr Hassan,active,INTENTIONALLY BAD ROW - template @2.0 missing AND plot_no 999 not in register (should be flagged by validation)

@@ -1,0 +1,108 @@
+{
+  "_file": "JamatAgro_CropTemplates_v1.json",
+  "_spec": "JamatAgro Farm Calendar v2.0 — Slice 1 (oil-palm establishment). Terminology aligned to the Master Plot Register + field Activity Log (see JamatAgro_TerminologyAlignment_v1.md).",
+  "_notes": "Agronomic values are starting defaults for farm-manager review; nothing here is hard-coded in the engine. 'activity_detail' maps each task to the field form's Detail dropdown so completions auto-match. immature/mature phases are declared for phase inference but their recurring/seasonal task sets land in Sprint 3-4.",
+  "templates": [
+    {
+      "template_id": "oil_palm",
+      "maps_to_current_use": "Oil palm",
+      "version": "1.0",
+      "display_name": "Oil palm (plantation)",
+      "cycle_kind": "perennial",
+      "anchors": ["field_planting"],
+
+      "default_seasons": {
+        "major": { "anchor": "field_planting", "window": ["04-01", "05-31"] },
+        "minor": { "anchor": "field_planting", "window": ["08-15", "09-30"] }
+      },
+
+      "phases": [
+        { "phase_id": "establishment", "entry": { "anchor": "field_planting", "offset_days": -60 }, "exit": { "anchor": "field_planting", "offset_days": 365 } },
+        { "phase_id": "immature",      "entry": { "anchor": "field_planting", "offset_days": 365 },  "exit": { "anchor": "field_planting", "offset_days": 1460 } },
+        { "phase_id": "mature",        "entry": { "anchor": "field_planting", "offset_days": 1460 }, "exit": null }
+      ],
+
+      "tasks": [
+        {
+          "task_code": "land_clear_prep",
+          "label": "Land clearing & burning-free prep",
+          "category": "infrastructure",
+          "activity_detail": "Clearing",
+          "type": "offset",
+          "anchor": "field_planting",
+          "offset_days": -60,
+          "window_days": 14,
+          "phase": "establishment",
+          "inputs": "cutlasses, no burning",
+          "critical": true
+        },
+        {
+          "task_code": "lining_pegging",
+          "label": "Lining & pegging (9 m triangular, ~143 palms/ha)",
+          "category": "infrastructure",
+          "activity_detail": "Other",
+          "type": "offset",
+          "anchor": "field_planting",
+          "offset_days": -30,
+          "window_days": 10,
+          "phase": "establishment",
+          "inputs": "pegs, measuring line",
+          "critical": false
+        },
+        {
+          "task_code": "hole_digging",
+          "label": "Hole digging (60x60x60 cm)",
+          "category": "infrastructure",
+          "activity_detail": "Other",
+          "type": "offset",
+          "anchor": "field_planting",
+          "offset_days": -14,
+          "window_days": 7,
+          "phase": "establishment",
+          "inputs": "diggers",
+          "critical": false
+        },
+        {
+          "task_code": "transplant",
+          "label": "Transplant seedlings to field",
+          "category": "planting",
+          "activity_detail": "Planting",
+          "type": "offset",
+          "anchor": "field_planting",
+          "offset_days": 0,
+          "window_days": 14,
+          "phase": "establishment",
+          "inputs": "nursery-hardened seedlings, ~143/ha",
+          "sets_anchor": "field_planting",
+          "critical": true
+        },
+        {
+          "task_code": "cover_crop",
+          "label": "Cover crop establishment (Pueraria / legume)",
+          "category": "planting",
+          "activity_detail": "Planting",
+          "type": "offset",
+          "anchor": "field_planting",
+          "offset_days": 14,
+          "window_days": 14,
+          "phase": "establishment",
+          "inputs": "Pueraria phaseoloides seed",
+          "critical": false
+        },
+        {
+          "task_code": "beat_up",
+          "label": "Beat-up / replace failed seedlings",
+          "category": "planting",
+          "activity_detail": "Planting",
+          "type": "offset",
+          "anchor": "field_planting",
+          "offset_days": 60,
+          "window_days": 21,
+          "phase": "establishment",
+          "inputs": "reserve seedlings (~5-10%)",
+          "critical": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JamatAgro · Farm Calendar — Planning v2 (Wave 1)</title>
+<style>
+  :root{--ink:#12321f;--ink2:#274536;--line:#dfe4e0;--muted:#5f6f66;--bg:#f6f8f6;
+        --red:#b4271b;--redbg:#fbe4e1;--amber:#8a5a08;--amberbg:#fbeecf;--green:#166a3d;--greenbg:#dcefe3;--grey:#5f6f66;--greybg:#e9edeb;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  header{background:var(--ink);color:#fff;padding:12px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  header b{font-size:17px}header .sub{color:#b7c9bf;font-size:13px}
+  header .badge{margin-left:auto;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:#2a5b3f;color:#cfe9da}
+  header .badge.dirty{background:#8a5a08;color:#fff}
+  .tabs{display:flex;gap:2px;background:var(--ink2);padding:0 8px;flex-wrap:wrap}
+  .tab{font:inherit;font-size:14px;color:#cfe0d7;background:transparent;border:none;padding:12px 15px;cursor:pointer;border-bottom:3px solid transparent;min-height:44px}
+  .tab.active{color:#fff;border-bottom-color:#8fd0aa;font-weight:600}
+  .wrap{max-width:1120px;margin:0 auto;padding:16px}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:end;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+  .controls label{display:flex;flex-direction:column;font-size:11px;color:var(--muted);gap:4px;text-transform:uppercase;letter-spacing:.03em}
+  .controls select,.controls input[type=date]{font:inherit;font-size:15px;padding:8px;border:1px solid #b9c4bd;border-radius:7px;color:var(--ink);background:#fff;min-height:40px}
+  .controls .hint{cursor:help;border-bottom:1px dotted var(--muted)}
+  .btn{font:inherit;font-size:14px;border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:8px;padding:9px 13px;cursor:pointer;min-height:40px}
+  .btn.sec{background:#fff;color:var(--ink)} .btn.sec:hover{background:#eef4ef}
+  .btn.danger{border-color:var(--red);color:var(--red);background:#fff}
+  .addform{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+  .addform label{display:flex;flex-direction:column;font-size:11px;color:var(--muted);gap:4px}
+  .addform input,.addform select{font:inherit;font-size:14px;padding:8px;border:1px solid #b9c4bd;border-radius:6px;min-height:40px}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:14px}
+  .health h3{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  .health .row{font-size:13px;color:var(--red);padding:3px 0} .health .ok{color:var(--green)}
+  .undobar{position:sticky;top:0;z-index:5;display:none;align-items:center;gap:10px;background:#274536;color:#fff;padding:8px 12px;border-radius:8px;margin-bottom:10px;font-size:13px}
+  .undobar button{font:inherit;font-size:13px;background:#fff;color:var(--ink);border:none;border-radius:6px;padding:6px 12px;cursor:pointer;min-height:36px}
+  /* year matrix */
+  .yearhead{font-size:15px;font-weight:700;color:var(--ink2);margin:4px 2px 10px}
+  .cropblock{margin-bottom:18px}.cropblock h3{margin:0 0 6px;font-size:15px}
+  .ymatrix-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table.ymatrix{width:100%;min-width:680px;border-collapse:collapse;font-size:12px;background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  table.ymatrix th,table.ymatrix td{border:1px solid #eef1ef;padding:6px 4px;text-align:center;width:6.5%}
+  table.ymatrix th:first-child,table.ymatrix td.catcell{text-align:left;width:20%;white-space:nowrap;font-weight:600;background:#fafbfa}
+  table.ymatrix th{background:#eef4f0;font-weight:600;color:var(--ink2)}
+  table.ymatrix th.rain-major{background:#e7f1e8}table.ymatrix th.rain-minor{background:#e3eef3}
+  table.ymatrix td.on{color:#0d2818;font-weight:700}
+  /* manpower */
+  .barrow{display:grid;grid-template-columns:104px 1fr 92px;gap:8px;align-items:center;margin:5px 0;font-size:12px}
+  .barrow .lab{color:var(--muted)} .barrow .val{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2)}
+  .track{position:relative;height:20px;background:#eef1ef;border-radius:4px;overflow:hidden}
+  .track .fill{position:absolute;left:0;top:0;height:100%;display:flex}
+  .seg{height:100%}
+  .track.over .fill{outline:2px solid var(--red);outline-offset:-2px}
+  .capmark{position:absolute;top:-3px;bottom:-3px;width:2px;background:#12321f}
+  .capmark::after{content:'cap';position:absolute;top:-14px;left:-8px;font-size:9px;color:#12321f}
+  .mtable{width:100%;border-collapse:collapse;font-size:13px}
+  .mtable th,.mtable td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:right}
+  .mtable th:first-child,.mtable td:first-child{text-align:left}
+  .short{color:var(--red);font-weight:700}
+  /* task rows */
+  .grp{margin:14px 0 6px;font-size:14px;font-weight:700;color:var(--ink2);border-bottom:2px solid var(--line);padding-bottom:3px}
+  .subgrp{margin:8px 0 4px;font-size:13px;font-weight:700;color:var(--ink2)}
+  .task{border-top:1px solid #eef1ef;background:#fff;padding:9px 10px}
+  .task .main{display:grid;grid-template-columns:82px 1fr 70px auto;gap:8px;align-items:center}
+  .task .d{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .task .t{font-size:14px}.task .t small{display:block;color:var(--muted);font-size:12px}
+  .task.done .t,.task.skipped .t{color:var(--grey);text-decoration:line-through}
+  .task .pd{font-size:12px;color:var(--ink2);text-align:right}
+  .cbadge{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
+  .st{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap}
+  .st.overdue{background:var(--redbg);color:var(--red)}
+  .st.due_soon{background:var(--amberbg);color:var(--amber)}
+  .st.in_window{background:var(--greenbg);color:var(--green)}
+  .st.upcoming{background:var(--greybg);color:var(--ink2)}
+  .st.not_reported{background:#fff;color:var(--muted);border:1px dashed #a9b6ae}
+  .st.done{background:var(--greenbg);color:var(--green)}
+  .st.skipped{background:var(--greybg);color:var(--muted)}
+  .crit{color:var(--red);font-weight:700}
+  .acts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .acts button{font:inherit;font-size:13px;border:1px solid #b9c4bd;background:#fff;border-radius:8px;padding:0 12px;min-width:44px;min-height:44px;cursor:pointer;color:var(--ink2)}
+  .acts button.pri{border-color:var(--green);color:var(--green)}
+  .acts button.undo{border-color:var(--ink2)}
+  .acts button:hover{background:#eef4ef}
+  .doneform{display:none;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;background:#f2f7f3;border:1px solid var(--line);border-radius:8px;padding:8px}
+  .doneform input[type=date]{font:inherit;font-size:15px;padding:8px;border:1px solid #b9c4bd;border-radius:6px;min-height:44px}
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .statline{display:flex;gap:16px;flex-wrap:wrap;margin:6px 0 10px;font-size:13px}
+  .statline b{font-size:17px}
+  .pill{padding:2px 9px;border-radius:20px;font-size:12px;font-weight:700}
+  .pill.red{background:var(--redbg);color:var(--red)}.pill.green{background:var(--greenbg);color:var(--green)}
+  .pill.amber{background:var(--amberbg);color:var(--amber)}.pill.grey{background:var(--greybg);color:var(--ink2)}
+  .empty{color:var(--muted);font-size:14px;padding:16px;text-align:center}
+  .note{font-size:12px;color:var(--muted);margin:8px 2px}
+  h2.vh{font-size:15px;margin:0 0 8px}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:6px 0}
+  .legend span{display:inline-flex;align-items:center;gap:4px}
+  /* Wave 2 additions */
+  .sugg{background:#eef6f0;border:1px solid #bfe0cc;border-radius:10px;padding:12px;margin-bottom:14px}
+  .sugg h3{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--green)}
+  .sugg .srow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 0;border-top:1px solid #d3e8dc;font-size:13px}
+  .sugg .srow:first-of-type{border-top:none}
+  .sugg .srow .who{color:var(--muted)}
+  .sugg button{font:inherit;font-size:13px;border:1px solid var(--green);background:#fff;color:var(--green);border-radius:8px;padding:0 12px;min-height:40px;cursor:pointer}
+  .sugg button:hover{background:#dcefe3}
+  .sugg .amb{color:var(--amber)}
+  .task.run{background:#fbfdfb}
+  .runbadge{font-size:11px;font-weight:700;color:var(--ink2);background:#e3eef3;border-radius:20px;padding:2px 8px;margin-left:6px}
+  .progress{height:6px;background:#e3eae5;border-radius:4px;overflow:hidden;margin-top:5px;max-width:220px}
+  .progress i{display:block;height:100%;background:var(--green)}
+  table.ymatrix td.on{cursor:pointer}
+  table.ymatrix td.pattern{background-image:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(120,120,120,.18) 4px,rgba(120,120,120,.18) 6px)}
+  .doneform .cap{display:flex;flex-direction:column;font-size:11px;color:var(--muted);gap:3px}
+  .doneform .cap input,.doneform .cap select{font:inherit;font-size:14px;padding:7px;border:1px solid #b9c4bd;border-radius:6px;min-height:40px}
+  .plotpick{display:flex;gap:8px;align-items:end;margin-bottom:10px}
+  /* Wave 3: non-colour status cues (glyph before the label) */
+  .st::before{font-weight:700;margin-right:3px}
+  .st.done::before{content:"✓"}.st.in_window::before{content:"●"}.st.due_soon::before{content:"»"}
+  .st.upcoming::before{content:"·"}.st.not_reported::before{content:"○"}.st.overdue::before{content:"!"}.st.skipped::before{content:"–"}
+  /* sticky group headers */
+  .grp{position:sticky;top:0;background:var(--bg);z-index:3}
+  .subgrp{position:sticky;top:30px;background:var(--bg);z-index:2}
+  /* season report + incidents */
+  .rtable{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px}
+  .rtable th,.rtable td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:right}
+  .rtable th:first-child,.rtable td:first-child{text-align:left}
+  .slip-pos{color:var(--red);font-weight:700}.slip-neg{color:var(--green);font-weight:700}
+  .inc{background:#fbe4e1;border:1px solid #e6b3ab;border-radius:8px;padding:8px 10px;margin:6px 0;font-size:13px;color:#7a1c12}
+  .inc b{color:#7a1c12}
+  .rep{display:flex;flex-direction:column;font-size:11px;color:#cfe9da;gap:3px}
+  .rep input{font:inherit;font-size:13px;padding:5px 7px;border:1px solid #3a6b4d;border-radius:6px;background:#1c3f2c;color:#fff;min-height:34px}
+  /* fully responsive (phone) */
+  @media(max-width:560px){
+    .controls{flex-direction:column;align-items:stretch}
+    .controls label,.controls select,.controls input,.controls .btn{width:100%}
+    .task .main{grid-template-columns:1fr auto;grid-row-gap:2px}
+    .task .main .d{grid-column:1/3;order:-1}
+    .task .pd{display:none}
+    .acts button{flex:1 1 40%}
+    .twocol{grid-template-columns:1fr}
+    .mtable{font-size:12px}.mtable th,.mtable td{padding:5px 4px}
+    header .badge{margin-left:0}
+    .barrow{grid-template-columns:72px 1fr 60px}
+  }
+  textarea{width:100%;min-height:150px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;border:1px solid #b9c4bd;border-radius:8px;padding:10px;white-space:pre}
+  @media(max-width:760px){
+    .twocol{grid-template-columns:1fr}
+    .task .main{grid-template-columns:64px 1fr auto}
+    .task .pd{display:none}
+    .controls{gap:8px}
+  }
+  @media print{
+    header,.tabs,.controls,.addform,.undobar,.acts,.health,.note,#exportbtn,#resetbtn,#addbtn{display:none !important}
+    body{background:#fff}.wrap{max-width:100%}
+    .task{break-inside:avoid}.panel{border:none;padding:0}
+    .st{border:1px solid #999}
+  }
+</style>
+</head>
+<body>
+<script src="JamatAgro_DataSources_v1.js"></script>
+<header><b>JamatAgro · Farm Calendar</b><span class="sub">Planning v4 — field build</span>
+  <label class="rep">Reporter (you)<input id="reporter" placeholder="e.g. Musa"></label>
+  <span class="badge" id="synced">saved</span></header>
+<div class="tabs">
+  <button class="tab" data-tab="daily">Today</button>
+  <button class="tab" data-tab="week">Week</button>
+  <button class="tab" data-tab="month">Month planner</button>
+  <button class="tab" data-tab="plot">Plot</button>
+  <button class="tab active" data-tab="year">Year overview</button>
+  <button class="tab" data-tab="report">Report</button>
+</div>
+<div class="wrap">
+  <div class="undobar" id="undobar"><span id="undomsg"></span><button id="undobtn">Undo</button></div>
+  <div class="controls">
+    <label><span class="hint" title="The date the plan is viewed as — a time-travel control, not a filter. Statuses are computed relative to this.">As of</span><input type="date" id="asof"></label>
+    <label id="yearwrap" style="display:none">Year<select id="year"></select></label>
+    <label>Manager<select id="mgr"><option value="">All managers</option></select></label>
+    <label>Crop<select id="crop"><option value="">All crops</option></select></label>
+    <label>Plot<input id="plot" type="number" style="width:76px" placeholder="all"></label>
+    <label>Category<select id="cat"><option value="">All</option><option value="planting">Planting</option><option value="weeding">Weeding</option><option value="fertilizer">Fertilizer</option><option value="crop_protection">Crop protection</option><option value="harvest">Harvest</option><option value="infrastructure">Infrastructure</option><option value="other">Other</option></select></label>
+    <label>Status<select id="statusf"><option value="">Any</option><option value="overdue">Overdue</option><option value="not_reported">Not reported</option><option value="in_window">On time</option><option value="due_soon">Due soon</option><option value="upcoming">Upcoming</option><option value="done">Done</option></select></label>
+    <label class="chk" style="flex-direction:row;align-items:center;gap:6px;text-transform:none"><input type="checkbox" id="critonly"> Critical only</label>
+    <button class="btn sec" id="addbtn">＋ Add activity</button>
+    <button class="btn sec" id="printbtn">Print</button>
+    <button class="btn sec" id="exportbtn">Export task_log</button>
+    <button class="btn danger" id="resetbtn">Clear unsynced</button>
+  </div>
+  <div class="addform" id="addform" style="display:none">
+    <label>Type<select id="af_type"><option value="task">Planned task</option><option value="incident">Incident</option></select></label>
+    <label>Plot no<input id="af_plot" type="number" style="width:80px" placeholder="45"></label>
+    <label>Activity<input id="af_label" placeholder="e.g. Emergency spray" style="width:200px"></label>
+    <label>Date<input id="af_date" type="date"></label>
+    <label>Manager<select id="af_mgr"></select></label>
+    <label id="af_catwrap">Category<select id="af_cat"><option value="crop_protection">crop protection</option><option value="weeding">weeding</option><option value="fertilizer">fertilizer</option><option value="harvest">harvest</option><option value="infrastructure">infrastructure</option><option value="other">other</option></select></label>
+    <label id="af_incwrap" style="display:none">Incident<select id="af_inc"><option>Fire</option><option>Flood</option><option>Pest/Disease</option><option>Theft</option><option>Other</option></select></label>
+    <label>Labour (pd)<input id="af_lab" type="number" step="0.5" style="width:80px" placeholder="2"></label>
+    <button class="btn" id="af_save">Add</button>
+    <button class="btn sec" id="af_cancel">Cancel</button>
+  </div>
+  <div class="panel health" id="health"></div>
+  <div id="view"></div>
+  <div class="note" id="livenote"></div>
+  <div class="note">Wave 1 field build: edits are saved to this device (survive reload) and appended to the exported <code>task_log.csv</code>. "Today" tab copies to WhatsApp / prints. Status: <b>on time</b> = still inside the task's tolerance window; <b>not reported</b> = past date, nothing logged yet (not counted as missed); <b>overdue</b> = a critical task past its window.</div>
+</div>
+<script>
+/*
+ * JamatAgro Farm Calendar — Generation Engine v2
+ * Adds recurring / seasonal / window task types, labour effort, date-range generation,
+ * provisional second anchors, ad-hoc planned activities, and manager re-assignment —
+ * while preserving the v1 guarantees (stable occurrence_index; plan_start_date bound).
+ *
+ * generate({ templates, cycles, taskLog, plots, plotUse, today, rangeStart, rangeEnd })
+ *   -> { today, rangeStart, rangeEnd, occurrences, validation }
+ *
+ * occurrence_index is computed from each task's intrinsic origin (NOT the view range),
+ * so it is stable no matter which window you render — completions never re-key.
+ */
+var JamatCal = (function () {
+  'use strict';
+
+  function parseDate(s){ if(!s) return null; var p=String(s).slice(0,10).split('-'); if(p.length<3) return null; var d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2])); return isNaN(d.getTime())?null:d; }
+  function iso(d){ return d.toISOString().slice(0,10); }
+  function addDays(d,n){ var x=new Date(d.getTime()); x.setUTCDate(x.getUTCDate()+n); return x; }
+  function diffDays(a,b){ return Math.round((a.getTime()-b.getTime())/86400000); }
+  function ymd(y,m,day){ return new Date(Date.UTC(y,m-1,day||1)); }
+  function parseVintageYear(v){ var m=String(v==null?'':v).match(/\d{4}/); return m?+m[0]:null; }
+
+  function csvParse(text){ var rows=[],row=[],field='',i=0,inQ=false,c; text=String(text).replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+    for(i=0;i<text.length;i++){ c=text[i];
+      if(inQ){ if(c==='"'){ if(text[i+1]==='"'){ field+='"'; i++; } else inQ=false; } else field+=c; }
+      else if(c==='"') inQ=true; else if(c===','){ row.push(field); field=''; }
+      else if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=''; } else field+=c; }
+    if(field.length||row.length){ row.push(field); rows.push(row); } if(!rows.length) return [];
+    var head=rows.shift().map(function(h){return h.trim();});
+    return rows.filter(function(r){return r.some(function(x){return x!=='';});})
+      .map(function(r){ var o={}; head.forEach(function(h,j){ o[h]=(r[j]==null?'':r[j]).trim(); }); return o; }); }
+
+  function indexTemplates(t){ var b={}; (t||[]).forEach(function(x){ b[x.template_id+'@'+x.version]=x; }); return b; }
+
+  function inferPhase(tp, age, ov){ if(ov) return ov;
+    for(var k=0;k<tp.phases.length;k++){ var ph=tp.phases[k]; var lo=ph.entry?ph.entry.offset_days:-Infinity; var hi=ph.exit?ph.exit.offset_days:Infinity; if(age>=lo && age<hi) return ph.phase_id; }
+    var last=tp.phases[tp.phases.length-1]; if(last && !last.exit && age>=(last.entry?last.entry.offset_days:0)) return last.phase_id; return null; }
+
+  function effectiveEvents(log){ var m={}; (log||[]).forEach(function(e){ if(e.action==='adhoc_created'||e.action==='assigned') return; var k=e.cycle_id+'|'+e.task_code+'|'+e.occurrence_index; if(!m[k]||String(e.event_ts)>String(m[k].event_ts)) m[k]=e; }); return m; }
+  // assignment is a distinct event so it never overwrites a done/shifted status
+  function assignments(log){ var m={}; (log||[]).forEach(function(e){ if(e.action!=='assigned') return; var k=e.cycle_id+'|'+e.task_code+'|'+e.occurrence_index; if(!m[k]||String(e.event_ts)>String(m[k].event_ts)) m[k]=e.manager||e.adhoc_manager||''; }); return m; }
+
+  function validateCycle(c, byKey, plotSet, plotUse){ var errs=[];
+    if(plotSet && !plotSet.has(String(c.plot_no))) errs.push('plot_no '+c.plot_no+' not found in register/geometry');
+    var tk=(c.template_version && c.template_version.indexOf('@')>=0)?c.template_version:null;
+    if(!tk || !byKey[tk]){ errs.push('template_version "'+c.template_version+'" not found'); }
+    else { var t=byKey[tk];
+      if(c.crop && t.crop_name && c.crop!==t.crop_name) errs.push('crop "'+c.crop+'" != template crop "'+t.crop_name+'"');
+      if(plotUse && plotUse[c.plot_no] && t.maps_to_current_use && plotUse[c.plot_no]!==t.maps_to_current_use)
+        errs.push('plot land-use "'+plotUse[c.plot_no]+'" incompatible with template use "'+t.maps_to_current_use+'"');
+      if(c.anchor_type && t.anchors.indexOf(c.anchor_type)<0) errs.push('anchor_type "'+c.anchor_type+'" not in template anchors');
+    }
+    if(!parseDate(c.anchor_date)) errs.push('anchor_date "'+c.anchor_date+'" invalid');
+    return errs; }
+
+  // resolve primary + sets_anchor (actual) + provisional second anchors
+  function resolveAnchors(cycle, tp, eff){ var a={};
+    a[cycle.anchor_type]={date:parseDate(cycle.anchor_date), status:cycle.anchor_status||'planned'};
+    tp.tasks.forEach(function(t){ if(!t.sets_anchor) return;
+      for(var k in eff){ var e=eff[k]; if(e.cycle_id===cycle.cycle_id && e.task_code===t.task_code && e.action==='done' && e.done_date){ a[t.sets_anchor]={date:parseDate(e.done_date), status:'actual', source:e.entry_id}; } } });
+    // provisional for any declared anchor still unresolved
+    (tp.anchors||[]).forEach(function(an){ if(a[an]) return;
+      var setter=tp.tasks.filter(function(t){return t.sets_anchor===an;})[0];
+      if(setter && a[setter.anchor] && a[setter.anchor].date){ a[an]={date:addDays(a[setter.anchor].date, setter.offset_days||0), status:'provisional'}; } });
+    return a; }
+
+  function labourFor(task, area){ var A=parseFloat(area); if(!isNaN(A) && task.labour_per_ha!=null) return Math.round(A*task.labour_per_ha*10)/10; if(task.labour_days!=null) return task.labour_days; return null; }
+
+  // expand one task to occurrences [{occurrence_index, date, end_date?}] up to rangeEnd.
+  // primaryDate = the cycle's primary-anchor date (used as the base year for seasonal tasks,
+  // which are month-anchored and carry no `anchor` field).
+  function expandTask(task, anchors, primaryDate, rangeEnd){ var out=[], CAP=6000;
+    if(task.type==='seasonal'){ var baseY=primaryDate.getUTCFullYear(); var months=(task.months||[]).slice(); var endY=rangeEnd.getUTCFullYear();
+      for(var Y=baseY; Y<=endY; Y++){ for(var mi=0; mi<months.length; mi++){ var d2=ymd(Y, months[mi], task.day||1); if(d2.getTime()>rangeEnd.getTime()) continue; out.push({occurrence_index:(Y-baseY)*months.length+mi, date:d2}); } }
+      return out; }
+    var a=anchors[task.anchor]; if(!a||!a.date) return out;
+    if(task.type==='offset'){ out.push({occurrence_index:0, date:addDays(a.date, task.offset_days||0)}); }
+    else if(task.type==='window'){ out.push({occurrence_index:0, date:addDays(a.date, task.start_offset_days||0), end_date:addDays(a.date, task.end_offset_days||0)}); }
+    else if(task.type==='recurring'){ var first=addDays(a.date, task.active_from_days||0); var last=(task.active_to_days!=null)?addDays(a.date, task.active_to_days):rangeEnd;
+      var k=0, d=first; while(d.getTime()<=last.getTime() && d.getTime()<=rangeEnd.getTime() && k<CAP){ out.push({occurrence_index:k, date:d}); k++; d=addDays(first, k*(task.interval_days||1)); } }
+    return out; }
+
+  // v3 status model — separates "not reported" (silence) from "overdue" (genuinely late),
+  // and treats a task still inside its tolerance window as on-time.
+  //   windowEnd = end_date (window tasks) OR planned + window_days.
+  function classify(sched, windowEnd, today, critical){
+    if(today.getTime() < sched.getTime()) return diffDays(sched,today)<=7 ? 'due_soon' : 'upcoming';
+    if(today.getTime() <= windowEnd.getTime()) return 'in_window';   // past nominal date but still inside tolerance
+    return critical ? 'overdue' : 'not_reported';                    // past tolerance, no event
+  }
+
+  function generate(opts){ opts=opts||{};
+    var today=opts.today?parseDate(opts.today):parseDate(iso(new Date()));
+    var byKey=indexTemplates(opts.templates);
+    var plotSet=opts.plots?new Set(opts.plots.map(String)):null;
+    var plotUse=opts.plotUse||null;
+    var eff=effectiveEvents(opts.taskLog||[]);
+    var asg=assignments(opts.taskLog||[]);
+    var rangeEnd=opts.rangeEnd?parseDate(opts.rangeEnd):addDays(today,420);
+    var rangeStartOpt=opts.rangeStart?parseDate(opts.rangeStart):null;
+    var validation=[], occ=[];
+
+    (opts.cycles||[]).forEach(function(c){
+      var errs=validateCycle(c, byKey, plotSet, plotUse);
+      if(errs.length){ validation.push({cycle_id:c.cycle_id, plot_no:c.plot_no, errors:errs}); return; }
+      if(['planned','active'].indexOf(c.status)<0) return;
+      var t=byKey[c.template_version];
+      var anchors=resolveAnchors(c, t, eff);
+      var primary=anchors[c.anchor_type]; if(!primary||!primary.date) return;
+      var planStart=parseDate(c.plan_start_date)||primary.date;
+      // no-flood lower bound; overview mode (year view) bypasses plan_start but is still
+      // bounded to the requested range, so at most one screen's worth of history appears.
+      var lowBound = opts.ignorePlanStart ? (rangeStartOpt||planStart)
+        : (rangeStartOpt && rangeStartOpt.getTime()>planStart.getTime() ? rangeStartOpt : planStart);
+
+      t.tasks.forEach(function(task){
+        expandTask(task, anchors, primary.date, rangeEnd).forEach(function(o){
+          // no-flood + range filters (index already assigned from intrinsic origin -> stable)
+          if(o.date.getTime()<lowBound.getTime()) return;
+          if(o.date.getTime()>rangeEnd.getTime()) return;
+          // phase gate evaluated at the OCCURRENCE date (handles multi-year perennials)
+          if(task.phase){ var ageAt=diffDays(o.date, primary.date); if(inferPhase(t, ageAt, c.phase_override||'')!==task.phase) return; }
+          var key=c.cycle_id+'|'+task.task_code+'|'+o.occurrence_index;
+          var e=eff[key]; var sched=o.date, status, dd=null, delta=null;
+          var mgr=asg[key]||c.manager||'(unassigned)';
+          if(e && e.action==='skipped'){ status='skipped'; }
+          else if(e && e.action==='done'){ status='done'; dd=parseDate(e.done_date); if(dd) delta=diffDays(dd,o.date); }
+          else {
+            if(e && e.action==='shifted' && e.new_date){ var nd=parseDate(e.new_date); if(nd) sched=nd; }
+            var winEnd = o.end_date ? o.end_date : addDays(sched, task.window_days||0);
+            status=classify(sched, winEnd, today, !!task.critical);
+          }
+          var winEndOut = o.end_date ? o.end_date : addDays(sched, task.window_days||0);
+          occ.push({ cycle_id:c.cycle_id, plot_no:c.plot_no, crop:c.crop, manager:mgr, field_label:task.field_label||'', phase:task.phase||inferPhase(t, diffDays(o.date,primary.date), c.phase_override||''),
+            task_code:task.task_code, label:task.label, category:task.category, activity_detail:task.activity_detail||'', type:task.type,
+            occurrence_index:o.occurrence_index, planned_date:iso(o.date), scheduled_date:iso(sched), end_date:o.end_date?iso(o.end_date):'', window_end:iso(winEndOut),
+            window_days:task.window_days||0, inputs:task.inputs||'', labour_days:labourFor(task, c.area_ha), critical:!!task.critical,
+            status:status, done_date:dd?iso(dd):'', delta_days:delta, anchor_status:primary.status, area_ha:c.area_ha||'', adhoc:false,
+            pattern:(opts.ignorePlanStart && o.date.getTime()<planStart.getTime()) });
+        });
+      });
+    });
+
+    // ad-hoc planned activities (rows with action 'adhoc_created')
+    (opts.taskLog||[]).forEach(function(e){ if(e.action!=='adhoc_created') return;
+      var d=parseDate(e.new_date)||parseDate(e.scheduled_date); if(!d) return;
+      if(rangeStartOpt && d.getTime()<rangeStartOpt.getTime()) return; if(d.getTime()>rangeEnd.getTime()) return;
+      var key=(e.cycle_id||'FARM')+'|'+e.entry_id+'|0'; var ov=eff[key]; var status, dd=null, sched=d;
+      if(ov && ov.action==='skipped') status='skipped'; else if(ov && ov.action==='done'){ status='done'; dd=parseDate(ov.done_date); }
+      else { if(ov && ov.action==='shifted' && ov.new_date){ var nd=parseDate(ov.new_date); if(nd) sched=nd; } status=classify(sched, sched, today, false); }
+      occ.push({ cycle_id:e.cycle_id||'', plot_no:e.adhoc_plot_no||'', crop:'(ad-hoc)', field_label:e.adhoc_label||'', manager:asg[key]||e.adhoc_manager||'(unassigned)',
+        phase:'', task_code:e.entry_id, label:e.adhoc_label||e.notes||'Ad-hoc task', category:e.adhoc_category||'other', activity_detail:'', type:'adhoc',
+        occurrence_index:0, planned_date:iso(d), scheduled_date:iso(sched), end_date:'', window_days:0, inputs:'', labour_days:(e.adhoc_labour_days!=null&&e.adhoc_labour_days!=='')?+e.adhoc_labour_days:null,
+        critical:false, status:status, done_date:dd?iso(dd):'', delta_days:null, anchor_status:'planned', area_ha:'', adhoc:true });
+    });
+
+    // recurring-run grouping (stable within the returned range) so the UI can collapse a run
+    var runs={};
+    occ.forEach(function(o){ if(o.type!=='recurring')return; var rid=o.cycle_id+'|'+o.task_code; (runs[rid]=runs[rid]||[]).push(o); });
+    Object.keys(runs).forEach(function(rid){ var arr=runs[rid].sort(function(a,b){return a.scheduled_date<b.scheduled_date?-1:1;}); arr.forEach(function(o,i){ o.run_id=rid; o.run_index=i; o.run_total=arr.length; }); });
+
+    occ.sort(function(a,b){ return a.scheduled_date<b.scheduled_date?-1:a.scheduled_date>b.scheduled_date?1:0; });
+    return { today:iso(today), rangeStart:rangeStartOpt?iso(rangeStartOpt):'', rangeEnd:iso(rangeEnd), occurrences:occ, validation:validation };
+  }
+
+  // Suggested completions from the existing activity log (spec P0-7). Matches open occurrences on
+  // plot_no + activity_detail + date within tolerance; nearest-date tie-break; multi-cycle -> ambiguous.
+  function autoMatch(activity, occurrences, tolDays){
+    tolDays = (tolDays==null)?5:tolDays;
+    var open = (occurrences||[]).filter(function(o){ return o.status!=='done' && o.status!=='skipped' && !o.adhoc; });
+    var sug=[];
+    (activity||[]).forEach(function(a,ai){
+      var type=String(a.type||'').toLowerCase(); if(type.indexOf('incident')>=0) return;
+      var detail=String(a.detail||'').trim().toLowerCase(); var ad=parseDate(a.date); if(!detail||!ad) return;
+      var plot=String(a.plot_no);
+      var cand=open.filter(function(o){ return String(o.plot_no)===plot && String(o.activity_detail||'').toLowerCase()===detail && Math.abs(diffDays(parseDate(o.scheduled_date),ad))<=tolDays; });
+      if(!cand.length) return;
+      cand.sort(function(x,y){ return Math.abs(diffDays(parseDate(x.scheduled_date),ad))-Math.abs(diffDays(parseDate(y.scheduled_date),ad)); });
+      var cycles={}; cand.forEach(function(o){ cycles[o.cycle_id]=1; });
+      var ambiguous=Object.keys(cycles).length>1;
+      sug.push({ activity_index:ai, date:a.date, by:a.by||'', detail:a.detail, plot_no:a.plot_no, ambiguous:ambiguous, candidates:cand, chosen: ambiguous?null:cand[0] });
+    });
+    return sug;
+  }
+
+  return { parseDate:parseDate, iso:iso, addDays:addDays, diffDays:diffDays, csvParse:csvParse, parseVintageYear:parseVintageYear, inferPhase:inferPhase, generate:generate, autoMatch:autoMatch };
+})();
+if (typeof module!=='undefined' && module.exports) module.exports=JamatCal;
+
+var TEMPLATES_JSON=`{
+ "_file": "JamatAgro_CropTemplates_v3.json",
+ "_spec": "JamatAgro Farm Calendar v2.0 \u2014 full lifecycle for oil palm, cassava, tomato. Aligned to Master Plot Register (maps_to_current_use) + Activity Log Detail vocabulary. labour_per_ha = person-days per hectare (manager-review defaults; not payroll).",
+ "templates": [
+  {
+   "template_id": "oil_palm",
+   "crop_name": "Oil palm",
+   "maps_to_current_use": "Oil palm",
+   "version": "2.0",
+   "display_name": "Oil palm (plantation)",
+   "cycle_kind": "perennial",
+   "anchors": [
+    "field_planting"
+   ],
+   "default_seasons": {
+    "major": {
+     "anchor": "field_planting",
+     "window": [
+      "04-01",
+      "05-31"
+     ]
+    },
+    "minor": {
+     "anchor": "field_planting",
+     "window": [
+      "08-15",
+      "09-30"
+     ]
+    }
+   },
+   "phases": [
+    {
+     "phase_id": "establishment",
+     "entry": {
+      "anchor": "field_planting",
+      "offset_days": -60
+     },
+     "exit": {
+      "anchor": "field_planting",
+      "offset_days": 365
+     }
+    },
+    {
+     "phase_id": "immature",
+     "entry": {
+      "anchor": "field_planting",
+      "offset_days": 365
+     },
+     "exit": {
+      "anchor": "field_planting",
+      "offset_days": 1460
+     }
+    },
+    {
+     "phase_id": "mature",
+     "entry": {
+      "anchor": "field_planting",
+      "offset_days": 1460
+     },
+     "exit": null
+    }
+   ],
+   "tasks": [
+    {
+     "task_code": "land_clear_prep",
+     "label": "Land clearing & burning-free prep",
+     "field_label": "Clear the land (no burning)",
+     "category": "infrastructure",
+     "activity_detail": "Clearing",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": -60,
+     "window_days": 14,
+     "phase": "establishment",
+     "labour_per_ha": 8,
+     "inputs": "cutlasses, no burning",
+     "critical": true
+    },
+    {
+     "task_code": "lining_pegging",
+     "label": "Lining & pegging (9 m triangular, ~143/ha)",
+     "field_label": "Mark out palm positions (9 m spacing)",
+     "category": "infrastructure",
+     "activity_detail": "Other",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": -30,
+     "window_days": 10,
+     "phase": "establishment",
+     "labour_per_ha": 2,
+     "inputs": "pegs, measuring line",
+     "critical": false
+    },
+    {
+     "task_code": "hole_digging",
+     "label": "Hole digging (60x60x60 cm)",
+     "field_label": "Dig planting holes",
+     "category": "infrastructure",
+     "activity_detail": "Other",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": -14,
+     "window_days": 7,
+     "phase": "establishment",
+     "labour_per_ha": 6,
+     "inputs": "diggers",
+     "critical": false
+    },
+    {
+     "task_code": "transplant",
+     "label": "Transplant seedlings to field",
+     "field_label": "Plant the palm seedlings",
+     "category": "planting",
+     "activity_detail": "Planting",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": 0,
+     "window_days": 14,
+     "phase": "establishment",
+     "labour_per_ha": 4,
+     "inputs": "seedlings ~143/ha",
+     "sets_anchor": "field_planting",
+     "critical": true
+    },
+    {
+     "task_code": "cover_crop",
+     "label": "Cover crop establishment (Pueraria)",
+     "field_label": "Plant cover crop (Pueraria)",
+     "category": "planting",
+     "activity_detail": "Planting",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": 14,
+     "window_days": 14,
+     "phase": "establishment",
+     "labour_per_ha": 1.5,
+     "inputs": "Pueraria seed",
+     "critical": false
+    },
+    {
+     "task_code": "beat_up",
+     "label": "Beat-up / replace failed seedlings",
+     "field_label": "Replace any failed seedlings",
+     "category": "planting",
+     "activity_detail": "Planting",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": 60,
+     "window_days": 21,
+     "phase": "establishment",
+     "labour_per_ha": 1,
+     "inputs": "reserve seedlings 5-10%",
+     "critical": false
+    },
+    {
+     "task_code": "ring_weeding_imm",
+     "label": "Ring weeding (immature)",
+     "field_label": "Weed around each palm",
+     "category": "weeding",
+     "activity_detail": "Weeding",
+     "type": "seasonal",
+     "months": [
+      4,
+      7,
+      10
+     ],
+     "phase": "immature",
+     "labour_per_ha": 2,
+     "inputs": "manual/selective spray",
+     "critical": false
+    },
+    {
+     "task_code": "fert_immature",
+     "label": "Fertilizer (immature, onset of rains)",
+     "field_label": "Apply fertilizer (young palms)",
+     "category": "fertilizer",
+     "activity_detail": "Fertiliser/Spraying",
+     "type": "seasonal",
+     "months": [
+      3,
+      9
+     ],
+     "phase": "immature",
+     "labour_per_ha": 1.5,
+     "inputs": "NPK + Mg",
+     "critical": false
+    },
+    {
+     "task_code": "ablation",
+     "label": "Ablation of early inflorescences",
+     "field_label": "Remove early flower bunches",
+     "category": "crop_protection",
+     "activity_detail": "Pruning",
+     "type": "recurring",
+     "anchor": "field_planting",
+     "interval_days": 60,
+     "active_from_days": 420,
+     "active_to_days": 900,
+     "phase": "immature",
+     "labour_per_ha": 1.5,
+     "inputs": "chisel",
+     "critical": false
+    },
+    {
+     "task_code": "pest_patrol_imm",
+     "label": "Pest patrol (immature)",
+     "field_label": "Check young palms for pests",
+     "category": "crop_protection",
+     "activity_detail": "Other",
+     "type": "recurring",
+     "anchor": "field_planting",
+     "interval_days": 30,
+     "active_from_days": 365,
+     "active_to_days": 1460,
+     "phase": "immature",
+     "labour_per_ha": 0.5,
+     "inputs": "scout",
+     "critical": false
+    },
+    {
+     "task_code": "harvest_round",
+     "label": "Harvest round (FFB, every ~12 days)",
+     "field_label": "Harvest ripe palm bunches",
+     "category": "harvest",
+     "activity_detail": "Harvest",
+     "type": "recurring",
+     "anchor": "field_planting",
+     "interval_days": 12,
+     "active_from_days": 1460,
+     "phase": "mature",
+     "labour_per_ha": 1.5,
+     "inputs": "chisel/pole, barrows",
+     "critical": true
+    },
+    {
+     "task_code": "pruning_mature",
+     "label": "Pruning (annual)",
+     "field_label": "Prune palm fronds",
+     "category": "crop_protection",
+     "activity_detail": "Pruning",
+     "type": "seasonal",
+     "months": [
+      1,
+      2
+     ],
+     "phase": "mature",
+     "labour_per_ha": 2,
+     "inputs": "pruning pole",
+     "critical": false
+    },
+    {
+     "task_code": "fert_mature",
+     "label": "Fertilizer (mature, split)",
+     "field_label": "Apply fertilizer (mature palms)",
+     "category": "fertilizer",
+     "activity_detail": "Fertiliser/Spraying",
+     "type": "seasonal",
+     "months": [
+      3,
+      9
+     ],
+     "phase": "mature",
+     "labour_per_ha": 1.5,
+     "inputs": "NPK + Mg + B",
+     "critical": false
+    },
+    {
+     "task_code": "path_maint",
+     "label": "Harvest path maintenance",
+     "field_label": "Clear the harvest paths",
+     "category": "infrastructure",
+     "activity_detail": "Other",
+     "type": "seasonal",
+     "months": [
+      2
+     ],
+     "phase": "mature",
+     "labour_per_ha": 1,
+     "inputs": "cutlass",
+     "critical": false
+    }
+   ]
+  },
+  {
+   "template_id": "cassava",
+   "crop_name": "Cassava",
+   "maps_to_current_use": "Arable",
+   "version": "1.0",
+   "display_name": "Cassava (long annual)",
+   "cycle_kind": "annual",
+   "anchors": [
+    "field_planting"
+   ],
+   "default_seasons": {
+    "major": {
+     "anchor": "field_planting",
+     "window": [
+      "04-01",
+      "06-15"
+     ]
+    },
+    "minor": {
+     "anchor": "field_planting",
+     "window": [
+      "09-01",
+      "10-15"
+     ]
+    }
+   },
+   "phases": [
+    {
+     "phase_id": "crop",
+     "entry": {
+      "anchor": "field_planting",
+      "offset_days": -30
+     },
+     "exit": null
+    }
+   ],
+   "tasks": [
+    {
+     "task_code": "land_prep_ridge",
+     "label": "Land prep / ridging",
+     "field_label": "Prepare and ridge the land",
+     "category": "infrastructure",
+     "activity_detail": "Clearing",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": -14,
+     "window_days": 10,
+     "labour_per_ha": 5,
+     "inputs": "ridger/hoe",
+     "critical": false
+    },
+    {
+     "task_code": "plant_cuttings",
+     "label": "Plant stem cuttings",
+     "field_label": "Plant cassava cuttings",
+     "category": "planting",
+     "activity_detail": "Planting",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": 0,
+     "window_days": 10,
+     "labour_per_ha": 4,
+     "inputs": "healthy stems",
+     "sets_anchor": "field_planting",
+     "critical": true
+    },
+    {
+     "task_code": "weed_1",
+     "label": "Weeding round 1 (critical)",
+     "field_label": "First weeding",
+     "category": "weeding",
+     "activity_detail": "Weeding",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": 25,
+     "window_days": 10,
+     "labour_per_ha": 3,
+     "inputs": "manual/pre-emergence",
+     "critical": true
+    },
+    {
+     "task_code": "weed_2",
+     "label": "Weeding round 2",
+     "field_label": "Second weeding",
+     "category": "weeding",
+     "activity_detail": "Weeding",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": 56,
+     "window_days": 12,
+     "labour_per_ha": 3,
+     "inputs": "manual",
+     "critical": false
+    },
+    {
+     "task_code": "fert_cassava",
+     "label": "Fertilizer (NPK, optional)",
+     "field_label": "Apply fertilizer",
+     "category": "fertilizer",
+     "activity_detail": "Fertiliser/Spraying",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": 56,
+     "window_days": 14,
+     "labour_per_ha": 1.5,
+     "inputs": "NPK 15-15-15",
+     "critical": false
+    },
+    {
+     "task_code": "weed_3",
+     "label": "Weeding round 3",
+     "field_label": "Third weeding",
+     "category": "weeding",
+     "activity_detail": "Weeding",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": 90,
+     "window_days": 14,
+     "labour_per_ha": 3,
+     "inputs": "manual",
+     "critical": false
+    },
+    {
+     "task_code": "pest_check_cassava",
+     "label": "Pest/disease check (mealybug, mosaic)",
+     "field_label": "Check for pests and disease",
+     "category": "crop_protection",
+     "activity_detail": "Other",
+     "type": "recurring",
+     "anchor": "field_planting",
+     "interval_days": 30,
+     "active_from_days": 30,
+     "active_to_days": 240,
+     "labour_per_ha": 0.5,
+     "inputs": "scout",
+     "critical": false
+    },
+    {
+     "task_code": "harvest_window",
+     "label": "Harvest window (month 9-15)",
+     "field_label": "Harvest cassava",
+     "category": "harvest",
+     "activity_detail": "Harvest",
+     "type": "window",
+     "anchor": "field_planting",
+     "start_offset_days": 270,
+     "end_offset_days": 450,
+     "labour_per_ha": 6,
+     "inputs": "lifting, transport",
+     "critical": false
+    },
+    {
+     "task_code": "stem_select",
+     "label": "Stem cutting selection for next season",
+     "field_label": "Select stems for next planting",
+     "category": "planting",
+     "activity_detail": "Other",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": 270,
+     "window_days": 30,
+     "labour_per_ha": 1,
+     "inputs": "select & store stems",
+     "critical": false
+    }
+   ]
+  },
+  {
+   "template_id": "tomato",
+   "crop_name": "Tomato",
+   "maps_to_current_use": "Arable",
+   "version": "1.0",
+   "display_name": "Tomato (open field)",
+   "cycle_kind": "annual",
+   "anchors": [
+    "nursery_sowing",
+    "field_transplant"
+   ],
+   "default_seasons": {
+    "major": {
+     "anchor": "nursery_sowing",
+     "window": [
+      "03-01",
+      "04-15"
+     ]
+    },
+    "dry": {
+     "anchor": "nursery_sowing",
+     "window": [
+      "10-01",
+      "11-15"
+     ],
+     "requires_irrigation": true
+    }
+   },
+   "phases": [
+    {
+     "phase_id": "crop",
+     "entry": {
+      "anchor": "nursery_sowing",
+      "offset_days": 0
+     },
+     "exit": null
+    }
+   ],
+   "tasks": [
+    {
+     "task_code": "nursery_sow",
+     "label": "Nursery sowing",
+     "field_label": "Sow tomato seeds in nursery",
+     "category": "planting",
+     "activity_detail": "Planting",
+     "type": "offset",
+     "anchor": "nursery_sowing",
+     "offset_days": 0,
+     "window_days": 5,
+     "labour_per_ha": 3,
+     "inputs": "seed trays, media",
+     "critical": true
+    },
+    {
+     "task_code": "nursery_care",
+     "label": "Nursery care (watering, damping-off watch)",
+     "field_label": "Water and tend the nursery",
+     "category": "crop_protection",
+     "activity_detail": "Other",
+     "type": "recurring",
+     "anchor": "nursery_sowing",
+     "interval_days": 3,
+     "active_from_days": 3,
+     "active_to_days": 26,
+     "labour_per_ha": 0.4,
+     "inputs": "water, fungicide",
+     "critical": false
+    },
+    {
+     "task_code": "land_prep_beds",
+     "label": "Land prep + beds",
+     "field_label": "Prepare the beds",
+     "category": "infrastructure",
+     "activity_detail": "Clearing",
+     "type": "offset",
+     "anchor": "nursery_sowing",
+     "offset_days": 21,
+     "window_days": 7,
+     "labour_per_ha": 6,
+     "inputs": "beds, manure",
+     "critical": false
+    },
+    {
+     "task_code": "transplant_tom",
+     "label": "Transplant to field",
+     "field_label": "Transplant seedlings to field",
+     "category": "planting",
+     "activity_detail": "Planting",
+     "type": "offset",
+     "anchor": "nursery_sowing",
+     "offset_days": 28,
+     "window_days": 7,
+     "labour_per_ha": 5,
+     "inputs": "seedlings",
+     "sets_anchor": "field_transplant",
+     "critical": true
+    },
+    {
+     "task_code": "staking",
+     "label": "Staking",
+     "field_label": "Stake the plants",
+     "category": "infrastructure",
+     "activity_detail": "Other",
+     "type": "offset",
+     "anchor": "field_transplant",
+     "offset_days": 14,
+     "window_days": 7,
+     "labour_per_ha": 4,
+     "inputs": "stakes, twine",
+     "critical": false
+    },
+    {
+     "task_code": "fert_split1",
+     "label": "Fertilizer split 1",
+     "field_label": "Apply fertilizer (1st)",
+     "category": "fertilizer",
+     "activity_detail": "Fertiliser/Spraying",
+     "type": "offset",
+     "anchor": "field_transplant",
+     "offset_days": 10,
+     "window_days": 5,
+     "labour_per_ha": 1,
+     "inputs": "NPK",
+     "critical": false
+    },
+    {
+     "task_code": "fert_split2",
+     "label": "Fertilizer split 2",
+     "field_label": "Apply fertilizer (2nd)",
+     "category": "fertilizer",
+     "activity_detail": "Fertiliser/Spraying",
+     "type": "offset",
+     "anchor": "field_transplant",
+     "offset_days": 30,
+     "window_days": 5,
+     "labour_per_ha": 1,
+     "inputs": "NPK",
+     "critical": false
+    },
+    {
+     "task_code": "fert_split3",
+     "label": "Fertilizer split 3",
+     "field_label": "Apply fertilizer (3rd)",
+     "category": "fertilizer",
+     "activity_detail": "Fertiliser/Spraying",
+     "type": "offset",
+     "anchor": "field_transplant",
+     "offset_days": 50,
+     "window_days": 5,
+     "labour_per_ha": 1,
+     "inputs": "NPK/K",
+     "critical": false
+    },
+    {
+     "task_code": "scout_tuta",
+     "label": "Pest & disease scouting (Tuta absoluta)",
+     "field_label": "Scout for tomato leafminer (Tuta)",
+     "category": "crop_protection",
+     "activity_detail": "Other",
+     "type": "recurring",
+     "anchor": "field_transplant",
+     "interval_days": 7,
+     "active_from_days": 7,
+     "active_to_days": 90,
+     "labour_per_ha": 0.5,
+     "inputs": "pheromone traps, scout",
+     "critical": true
+    },
+    {
+     "task_code": "first_harvest",
+     "label": "First harvest",
+     "field_label": "First harvest",
+     "category": "harvest",
+     "activity_detail": "Harvest",
+     "type": "offset",
+     "anchor": "field_transplant",
+     "offset_days": 60,
+     "window_days": 5,
+     "labour_per_ha": 3,
+     "inputs": "crates",
+     "critical": false
+    },
+    {
+     "task_code": "harvest_picks",
+     "label": "Harvest picks (every 3-4 days)",
+     "field_label": "Pick ripe tomatoes",
+     "category": "harvest",
+     "activity_detail": "Harvest",
+     "type": "recurring",
+     "anchor": "field_transplant",
+     "interval_days": 3,
+     "active_from_days": 60,
+     "active_to_days": 100,
+     "labour_per_ha": 2,
+     "inputs": "crates, transport",
+     "critical": false
+    }
+   ]
+  }
+ ],
+ "version_note": "v3 adds plain-language field_label per task (Wave 3, FC-03). Agronomic 'label' retained."
+}`;
+var CYCLES_CSV=`cycle_id,plot_no,crop,template_version,anchor_type,anchor_date,anchor_status,plan_start_date,phase_override,season,vintage_year,area_ha,manager,status,notes
+CYC-2026-014,35,Oil palm,oil_palm@2.0,field_planting,2026-09-01,planned,2026-06-01,,minor,2026,2.4,Mr Hassan,active,2026 expansion establishment (plot 35)
+CYC-2026-015,36,Oil palm,oil_palm@2.0,field_planting,2026-09-15,planned,2026-06-01,,minor,2026,3.1,Mr Hassan,active,2026 expansion establishment (plot 36)
+CYC-2026-016,37,Oil palm,oil_palm@2.0,field_planting,2026-08-20,planned,2026-06-01,,minor,2026,1.8,Dr Iginla,active,2026 expansion establishment (plot 37)
+CYC-ONB-001,1,Oil palm,oil_palm@2.0,field_planting,2018-04-15,actual,2026-07-26,,perennial,2018,3.1,Dr Iginla,active,Mature block - harvest/pruning/fertilizer
+CYC-ONB-057,57,Oil palm,oil_palm@2.0,field_planting,2024-05-01,actual,2026-07-26,,perennial,2024,2.0,Dr Iginla,active,Immature block yr 2 - weeding/ablation/fert
+CYC-CAS-045,45,Cassava,cassava@1.0,field_planting,2026-04-20,actual,2026-04-01,,major,,2.0,Dr Iginla,active,Cassava major season (arable plot 45)
+CYC-TOM-046,46,Tomato,tomato@1.0,nursery_sowing,2026-03-10,actual,2026-03-10,,major,,0.5,Mr Hassan,active,Tomato major season (arable plot 46)
+CYC-TOM-052,52,Tomato,tomato@1.0,nursery_sowing,2026-10-15,planned,2026-10-15,,dry,,0.4,Mr Hassan,active,Tomato dry season irrigated (arable plot 52)
+CYC-2026-099,999,Oil palm,oil_palm@9.9,field_planting,2026-09-01,planned,2026-06-01,,minor,2026,1.5,Mr Hassan,active,BAD ROW - template @9.9 missing AND plot 999 unknown
+`;
+var TASKLOG_CSV=`entry_id,event_ts,cycle_id,task_code,occurrence_index,scheduled_date,action,new_date,done_date,anchor_name,by,source_entry_id,adhoc_plot_no,adhoc_label,adhoc_category,adhoc_manager,adhoc_labour_days,notes
+T-000001,2026-07-20T09:00:00,CYC-2026-014,land_clear_prep,0,2026-07-03,done,,2026-07-19,,Musa,,,,,,,Cleared - 16 days late (rain delay)
+T-AD001,2026-07-24T16:00:00,,ADHOC,0,,adhoc_created,2026-08-05,,,Dr Iginla,,45,Emergency mealybug spot-spray,crop_protection,Dr Iginla,2,Ad-hoc planned response after scouting
+`;
+var WORKFORCE_CSV=`manager,crew_size,work_days_per_week,notes
+Dr Iginla,8,6,Core gang - eastern blocks
+Mr Hassan,6,6,Core gang - 2026 expansion blocks
+(unassigned),0,6,No standing crew
+`;
+var ACTIVITY_CSV=`plot_no,type,detail,date,by
+37,Work done,Clearing,2026-06-22,Musa
+37,Work done,Planting,2026-08-19,Musa
+45,Work done,Weeding,2026-05-16,Bola
+45,Work done,Weeding,2026-06-14,Bola
+46,Work done,Harvest,2026-06-21,Crew A
+1,Work done,Harvest,2026-08-13,Crew B
+5,Incident,Fire,2026-08-01,Crew A
+`;
+/* ===== JamatAgro Planning Views v4 — Wave 3 ===== */
+var TEMPLATES=JSON.parse(TEMPLATES_JSON).templates;
+var baseCycles=JamatCal.csvParse(CYCLES_CSV);
+var baseLog=JamatCal.csvParse(TASKLOG_CSV);
+var ACTIVITY=(typeof ACTIVITY_CSV!=="undefined"&&ACTIVITY_CSV)?JamatCal.csvParse(ACTIVITY_CSV):[];
+var WORKFORCE={};JamatCal.csvParse(WORKFORCE_CSV).forEach(function(r){WORKFORCE[r.manager]={crew:+r.crew_size||0,days:+r.work_days_per_week||6};});
+var LSKEY="jamat_sessionLog_v2";
+var sessionLog=[];
+var PLOTS=[];for(var _p=1;_p<=98;_p++)PLOTS.push(_p);
+var PLOTUSE={1:"Oil palm",35:"Oil palm",36:"Oil palm",37:"Oil palm",57:"Oil palm",45:"Arable",46:"Arable",52:"Arable"};
+var LOGCOLS=["entry_id","event_ts","cycle_id","task_code","occurrence_index","scheduled_date","action","new_date","done_date","anchor_name","by","source_entry_id","manager","adhoc_plot_no","adhoc_label","adhoc_category","adhoc_manager","adhoc_labour_days","crew_size","qty","qty_unit","note","notes"];
+var MANAGERS=["Dr Iginla","Mr Hassan","(unassigned)"];
+var MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+var CATS=["planting","weeding","fertilizer","crop_protection","harvest","infrastructure","other"];
+var CATLAB={planting:"Planting",weeding:"Weeding",fertilizer:"Fertilizer",crop_protection:"Crop protection",harvest:"Harvest",infrastructure:"Infrastructure",other:"Other"};
+var CATCOL={planting:"#2e7d32",weeding:"#7cb342",fertilizer:"#00838f",crop_protection:"#8e24aa",harvest:"#ef6c00",infrastructure:"#6d4c41",other:"#90a4ae"};
+var MGRCOL={"Dr Iginla":"#166a3d","Mr Hassan":"#00695c","(unassigned)":"#9e9e9e"};
+var STLAB={done:"done",in_window:"on time",due_soon:"due soon",upcoming:"upcoming",not_reported:"not reported",overdue:"overdue",skipped:"skipped"};
+var activeTab="year";var lastEventId=null;var SKEYS={};var RUNMAP={};
+
+var P=JamatCal.parseDate,ISO=JamatCal.iso,AD=JamatCal.addDays,DD=JamatCal.diffDays;
+function el(id){return document.getElementById(id);}
+function todayISO(){return new Date().toISOString().slice(0,10);}
+function fmt(iso){if(!iso)return"";var p=iso.split("-");return(+p[2])+" "+MONTHS[+p[1]-1];}
+function byDate(a,b){return a.scheduled_date<b.scheduled_date?-1:1;}
+function monthStart(d){return new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),1));}
+function monthEnd(d){return new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0));}
+function addMonths(d,n){return new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+n,1));}
+function monthName(d){return MONTHS[d.getUTCMonth()]+" "+d.getUTCFullYear();}
+function mondayOf(d){var x=new Date(d.getTime());var g=(x.getUTCDay()+6)%7;return AD(x,-g);}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function hexA(hex,op){var n=parseInt(hex.slice(1),16);return"rgba("+((n>>16)&255)+","+((n>>8)&255)+","+(n&255)+","+op+")";}
+function mgrColor(m){return MGRCOL[m]||"#4e7d63";}
+function keyOf(o){return(o.cycle_id||"")+"|"+o.task_code+"|"+o.occurrence_index;}
+function safeId(k){return"df_"+k.replace(/[^a-z0-9]/gi,"_");}
+
+function loadSession(){try{var s=localStorage.getItem(LSKEY);sessionLog=s?JSON.parse(s):[];}catch(e){sessionLog=[];}}
+function saveSession(){try{localStorage.setItem(LSKEY,JSON.stringify(sessionLog));}catch(e){}updateBadge();}
+function updateBadge(){var b=el("synced");if(sessionLog.length){b.textContent=sessionLog.length+" unsynced";b.className="badge dirty";}else{b.textContent="saved";b.className="badge";}}
+
+function gen(extra){var o={templates:TEMPLATES,cycles:baseCycles,taskLog:baseLog.concat(sessionLog),plots:PLOTS,plotUse:PLOTUSE,today:el("asof").value};for(var k in extra)o[k]=extra[k];return JamatCal.generate(o);}
+function applyFilters(occ){var m=el("mgr").value,c=el("crop").value,pl=el("plot").value,cat=el("cat").value,crit=el("critonly").checked,st=el("statusf").value;
+  return occ.filter(function(o){
+    if(m&&o.manager!==m)return false;
+    if(c&&!o.adhoc&&o.crop!==c)return false;      // ad-hoc are plot-scoped, exempt from crop filter
+    if(pl&&String(o.plot_no)!==String(pl))return false;
+    if(cat&&o.category!==cat)return false;
+    if(crit&&!o.critical)return false;
+    if(st&&o.status!==st)return false;
+    return true;});}
+function sessionKeys(){var s={};sessionLog.forEach(function(e){s[(e.cycle_id||"")+"|"+e.task_code+"|"+e.occurrence_index]=true;});return s;}
+
+function fixHint(err){if(/not found in register/.test(err))return"add this plot to the Master Plot Register, or correct plot_no";if(/template_version/.test(err))return"point the cycle to a template version that exists in crop_templates";if(/land-use/.test(err))return"this crop can't grow on that plot's land-use — check current_use";if(/anchor_type/.test(err))return"use one of the template's declared anchors";if(/anchor_date/.test(err))return"fix the date format (YYYY-MM-DD)";return"edit this row in crop_cycles.csv";}
+function renderHealth(res){var h=el("health");if(res.validation.length){h.style.display="";h.innerHTML='<h3>Data health — '+res.validation.length+' cycle(s) excluded (edit in crop_cycles.csv)</h3>'+res.validation.map(function(v){return '<div class="row">✗ <b>'+v.cycle_id+'</b> (plot '+v.plot_no+'): '+v.errors.join(' ; ')+'<br><span style="color:var(--muted)">→ fix: '+v.errors.map(fixHint).join('; ')+'</span></div>';}).join('');}else{h.style.display="none";}}
+
+/* ---------- live data load (shared sources; bundled data is the fallback) ---------- */
+function normActivityRows(rows){return rows.map(function(r){var o={};for(var k in r)o[String(k).trim().toLowerCase()]=r[k];
+  function pick(){for(var i=0;i<arguments.length;i++){if(o[arguments[i]])return o[arguments[i]];}for(var key in o){for(var j=0;j<arguments.length;j++){if(key.indexOf(arguments[j])>=0&&o[key])return o[key];}}return "";}
+  var detail=pick("detail"),sev=pick("severity"),type=pick("typ","type");
+  var isInc=sev!==""||["fire","flood","pest","disease","theft"].indexOf(String(detail).toLowerCase())>=0||/incident/i.test(type);
+  return {plot_no:pick("plot_no","plot number","plot"),type:isInc?"Incident":"Work",detail:detail,date:pick("date")||pick("timestamp","zeitstempel"),by:pick("your name","by","name")};
+}).filter(function(x){return x.plot_no;});}
+function fetchText(u){return fetch(u,{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.text();});}
+function rebuildCropOptions(){var cr=el("crop");var cur=cr.value;cr.innerHTML='<option value="">All crops</option>';TEMPLATES.forEach(function(t){var o=document.createElement("option");o.value=t.crop_name;o.textContent=t.crop_name;cr.appendChild(o);});cr.value=cur;}
+function loadLive(){
+  var S=window.JAMAT_SRC||{};var jobs=[];var used=[];
+  if(S.CROP_CYCLES_URL)jobs.push(fetchText(S.CROP_CYCLES_URL).then(function(t){var rows=JamatCal.csvParse(t).filter(function(x){return x.cycle_id;});if(rows.length){baseCycles=rows;used.push("cycles");}}).catch(function(){}));
+  if(S.TASK_LOG_URL)jobs.push(fetchText(S.TASK_LOG_URL).then(function(t){var rows=JamatCal.csvParse(t).filter(function(x){return x.entry_id;});baseLog=rows;used.push("task log");}).catch(function(){}));
+  if(S.ACTIVITY_CSV_URL)jobs.push(fetchText(S.ACTIVITY_CSV_URL).then(function(t){var rows=normActivityRows(JamatCal.csvParse(t));if(rows.length){ACTIVITY=rows;used.push("activity");}}).catch(function(){}));
+  if(S.REGISTER_CSV_URL)jobs.push(fetchText(S.REGISTER_CSV_URL).then(function(t){var rows=JamatCal.csvParse(t);var pu={},pl=[];rows.forEach(function(r){var n=parseInt(r.plot_no);if(!isNaN(n)){pl.push(n);if(r.current_use)pu[n]=r.current_use;}});if(pl.length){PLOTUSE=pu;PLOTS=pl;used.push("register");}}).catch(function(){}));
+  jobs.push(fetch((S.CROP_TEMPLATES_FILE||"JamatAgro_CropTemplates_v3.json"),{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(j){TEMPLATES=(j&&j.templates)||j;used.push("templates");}).catch(function(){}));
+  if(S.WORKFORCE_FILE)jobs.push(fetchText(S.WORKFORCE_FILE).then(function(t){var w={};JamatCal.csvParse(t).forEach(function(r){w[r.manager]={crew:+r.crew_size||0,days:+r.work_days_per_week||6};});if(Object.keys(w).length)WORKFORCE=w;}).catch(function(){}));
+  if(!jobs.length)return;
+  Promise.all(jobs).then(function(){rebuildCropOptions();render();var n=el("livenote");if(n)n.textContent=used.length?("Live data loaded from shared sources: "+used.join(", ")+"."):"Using bundled sample data (publish the Cycles & Task-log sheets to go live).";});
+}
+
+/* ---------- Wave 3 helpers ---------- */
+function getReporter(){var e=el("reporter");var r=(e&&e.value||"").trim();return r||"field";}
+function catLegend(){return '<div class="legend">'+CATS.map(function(c){return '<span><span class="cbadge" style="background:'+CATCOL[c]+'"></span>'+CATLAB[c]+'</span>';}).join('')+'</div>';}
+function openAssign(btn,d){var s=document.createElement("select");s.className="assignsel";s.style.minHeight="40px";MANAGERS.forEach(function(m){var o=document.createElement("option");o.value=m;o.textContent=m;s.appendChild(o);});s.value=d.mgr||"Dr Iginla";btn.replaceWith(s);try{s.focus();}catch(e){}s.addEventListener("change",function(){commit(d,"assigned",{manager:s.value});});}
+function incidentList(){var out=[];ACTIVITY.forEach(function(a){if(String(a.type||"").toLowerCase().indexOf("incident")>=0)out.push({plot:a.plot_no,detail:a.detail,date:a.date,by:a.by,src:"field form"});});sessionLog.forEach(function(e){if(e.action==="incident")out.push({plot:e.adhoc_plot_no,detail:e.adhoc_label,date:e.new_date,by:e.by,src:"logged here"});});return out.sort(function(a,b){return a.date<b.date?1:-1;});}
+function renderIncidentsPanel(filterPlot){var inc=incidentList();if(filterPlot)inc=inc.filter(function(i){return String(i.plot)===String(filterPlot);});if(!inc.length)return"";return '<div class="panel"><h2 class="vh">⚠ Incidents</h2>'+inc.map(function(i){return '<div class="inc"><b>'+esc(i.detail)+'</b> — plot '+esc(i.plot)+' · '+fmt(i.date)+' · '+esc(i.by||"")+' <span style="color:var(--muted)">('+i.src+')</span></div>';}).join('')+'</div>';}
+function renderReport(){
+  var y=el("asof").value.slice(0,4);var res=gen({rangeStart:y+"-01-01",rangeEnd:y+"-12-31"});renderHealth(res);
+  var done=res.occurrences.filter(function(o){return o.status==="done"&&o.delta_days!=null&&!o.adhoc;});
+  var html='<h2 class="vh">Season report '+y+' — planned vs actual</h2>';
+  if(!done.length){el("view").innerHTML=html+'<div class="empty">No completed, dated tasks yet in '+y+'. Slippage appears here as work is logged (confirm some field reports on the Today tab).</div>';return;}
+  function agg(keyFn){var m={};done.forEach(function(o){var k=keyFn(o);(m[k]=m[k]||[]).push(o.delta_days);});return Object.keys(m).map(function(k){var a=m[k],avg=a.reduce(function(s,x){return s+x;},0)/a.length;return{k:k,n:a.length,avg:avg};}).sort(function(x,y){return y.avg-x.avg;});}
+  function tbl(title,label,rows){var h='<div class="panel"><h2 class="vh">'+title+'</h2><table class="rtable"><thead><tr><th>'+label+'</th><th>done</th><th>avg slippage</th></tr></thead><tbody>';rows.forEach(function(r){var cls=r.avg>0.5?"slip-pos":(r.avg<-0.5?"slip-neg":"");h+='<tr><td>'+esc(r.k)+'</td><td>'+r.n+'</td><td class="'+cls+'">'+(r.avg>0?"+":"")+r.avg.toFixed(1)+' d</td></tr>';});return h+'</tbody></table></div>';}
+  var overall=done.reduce(function(s,o){return s+o.delta_days;},0)/done.length;
+  html+='<div class="statline"><div><b>'+done.length+'</b> completed &amp; dated</div><div>overall avg slippage <b class="'+(overall>0?"slip-pos":"slip-neg")+'">'+(overall>0?"+":"")+overall.toFixed(1)+' d</b> (＋ = late)</div></div>';
+  html+=tbl("Slippage by category","Category",agg(function(o){return CATLAB[o.category]||o.category;}));
+  html+=tbl("Slippage by manager","Manager",agg(function(o){return o.manager;}));
+  html+=tbl("Slippage by crop","Crop",agg(function(o){return o.crop;}));
+  html+='<div class="acts"><button class="btn" id="reportcsv">Export season report CSV</button></div>';
+  el("view").innerHTML=html;
+  var rc=el("reportcsv");if(rc)rc.addEventListener("click",function(){var lines=["scope,key,done,avg_slippage_days"];[["category",agg(function(o){return CATLAB[o.category]||o.category;})],["manager",agg(function(o){return o.manager;})],["crop",agg(function(o){return o.crop;})]].forEach(function(p){p[1].forEach(function(r){lines.push(p[0]+","+String(r.k).replace(/,/g,"")+","+r.n+","+r.avg.toFixed(1));});});var blob=new Blob([lines.join("\n")+"\n"],{type:"text/csv"});var u=URL.createObjectURL(blob);var a=document.createElement("a");a.href=u;a.download="JamatAgro_SeasonReport_"+y+".csv";a.click();});
+}
+
+/* ---------- rows ---------- */
+function taskRow(o){
+  var sk=SKEYS[keyOf(o)];var terminal=(o.status==="done"||o.status==="skipped");
+  var lab=o.field_label||o.label;
+  var win=(o.window_days&&o.status==="in_window")?(' · within '+o.window_days+'d'):'';
+  var band=(o.type==="window"&&o.end_date)?(' → '+fmt(o.end_date)):'';
+  var stl=STLAB[o.status]+(o.status==="done"&&o.delta_days!=null?" "+(o.delta_days>0?"+"+o.delta_days:o.delta_days)+"d":"");
+  var pd=o.labour_days!=null?o.labour_days+" pd":"";
+  var acts;
+  if(terminal){acts=sk?'<button class="undo" data-a="undo">↺ undo</button>':'';}
+  else{acts='<button class="pri" data-a="done">✓ Done</button><button data-a="resch">Reschedule</button><button data-a="assign">@ Assign</button><button data-a="skip">Skip</button>'+(sk?'<button class="undo" data-a="undo">↺ undo</button>':'');}
+  var isHarvest=o.category==="harvest";
+  return '<div class="task '+(terminal?o.status:"")+'" data-key="'+esc(keyOf(o))+'" data-c="'+esc(o.cycle_id||"")+'" data-t="'+esc(o.task_code)+'" data-i="'+o.occurrence_index+'" data-s="'+o.scheduled_date+'" data-cat="'+esc(o.category)+'" data-adhoc="'+(o.adhoc?1:0)+'">'+
+    '<div class="main"><div class="d">'+fmt(o.scheduled_date)+band+'</div>'+
+    '<div class="t"><span class="cbadge" style="background:'+(CATCOL[o.category]||"#90a4ae")+'"></span>'+(o.critical?'<span class="crit">‼ </span>':'')+esc(lab)+
+      '<small>'+(o.adhoc?"ad-hoc":("plot "+o.plot_no+" · "+o.crop))+(o.inputs?" · "+esc(o.inputs):"")+win+'</small></div>'+
+    '<div class="pd">'+pd+'</div><div><span class="st '+o.status+'">'+stl+'</span></div></div>'+
+    '<div class="acts">'+acts+'</div>'+
+    '<div class="doneform" id="'+safeId(keyOf(o))+'">'+
+      '<label class="cap">Date<input type="date" class="dfd" value="'+todayISO()+'"></label>'+
+      '<label class="cap caponly">Crew<input type="number" class="dfc" placeholder="8" style="width:70px"></label>'+
+      (isHarvest?'<label class="cap caponly">Yield<input type="number" class="dfq" placeholder="qty" style="width:70px"></label><label class="cap caponly">Unit<select class="dfu"><option value=""></option><option>tonnes</option><option>kg</option><option>bags</option><option>crates</option></select></label>':'<input type="hidden" class="dfq"><input type="hidden" class="dfu">')+
+      '<label class="cap caponly">Note<input type="text" class="dfn" placeholder="optional" style="width:150px"></label>'+
+      '<button class="btn confirmf" data-a="confirmf">Confirm</button><button class="btn sec" data-a="cancelf">Cancel</button></div>'+
+    '</div>';
+}
+function runRow(arr){
+  arr=arr.slice().sort(byDate);
+  var rid=arr[0].run_id,done=arr.filter(function(o){return o.status==="done";}).length,total=arr.length;
+  var open=arr.filter(function(o){return o.status!=="done"&&o.status!=="skipped";});
+  var nx=open[0]||arr[arr.length-1];var labour=arr.reduce(function(s,o){return s+(o.labour_days||0);},0);
+  var lab=nx.field_label||nx.label;var pct=total?Math.round(done/total*100):0;
+  RUNMAP[rid]=arr.map(function(o){return{key:keyOf(o),c:o.cycle_id,t:o.task_code,i:o.occurrence_index,s:o.scheduled_date,status:o.status,cat:o.category};});
+  return '<div class="task run" data-run="'+esc(rid)+'">'+
+    '<div class="main"><div class="d">'+fmt(nx.scheduled_date)+'</div>'+
+    '<div class="t"><span class="cbadge" style="background:'+(CATCOL[nx.category]||"#90a4ae")+'"></span>'+(nx.critical?'<span class="crit">‼ </span>':'')+esc(lab)+
+      '<span class="runbadge">'+done+' of '+total+' done</span>'+
+      '<small>plot '+nx.plot_no+' · '+nx.crop+' · repeats every '+(nx.task_code.indexOf("pick")>=0?"3–4":"~")+' days</small>'+
+      '<div class="progress"><i style="width:'+pct+'%"></i></div></div>'+
+    '<div class="pd">'+Math.round(labour*10)/10+' pd</div><div><span class="st '+nx.status+'">'+STLAB[nx.status]+'</span></div></div>'+
+    '<div class="acts">'+(open.length?'<button class="pri" data-a="runnext">✓ Done next</button><button data-a="runbulk">✓ Done all ≤ today</button>':'<span class="note" style="margin:0">run complete</span>')+'</div>'+
+    '</div>';
+}
+function renderList(occs){
+  RUNMAP=RUNMAP||{};
+  var byRun={};occs.forEach(function(o){if(o.run_id&&o.run_total>1)(byRun[o.run_id]=byRun[o.run_id]||[]).push(o);});
+  var emitted={},out=[];
+  occs.forEach(function(o){
+    if(o.run_id&&o.run_total>1){if(emitted[o.run_id])return;emitted[o.run_id]=true;out.push(runRow(byRun[o.run_id]));}
+    else out.push(taskRow(o));});
+  return out.join("");
+}
+
+/* ---------- actions ---------- */
+function wireView(){el("view").addEventListener("click",onViewClick);}
+function onViewClick(e){
+  var cell=e.target.closest("td.on[data-crop]");
+  if(cell){el("crop").value=cell.dataset.crop;el("asof").value=cell.dataset.month;activeTab="month";document.querySelectorAll(".tab").forEach(function(x){x.classList.toggle("active",x.dataset.tab==="month");});render();return;}
+  var btn=e.target.closest("[data-a],[data-sg]");if(!btn)return;
+  if(btn.dataset.sg){var parts=btn.dataset.key.split("|");commit({c:parts[0],t:parts[1],i:parts[2],s:""},"done",{date:btn.dataset.date,by:btn.dataset.by});return;}
+  var runEl=btn.closest(".task.run");
+  if(runEl){var rid=runEl.dataset.run,arr=RUNMAP[rid]||[];
+    if(btn.dataset.a==="runnext"){var nx=arr.filter(function(x){return x.status!=="done"&&x.status!=="skipped";})[0];if(nx)commit({c:nx.c,t:nx.t,i:nx.i,s:nx.s},"done",{date:todayISO()});return;}
+    if(btn.dataset.a==="runbulk"){var asof=el("asof").value,n=0;arr.forEach(function(x){if(x.status!=="done"&&x.status!=="skipped"&&x.s<=asof){pushDone({c:x.c,t:x.t,i:x.i,s:x.s},asof);n++;}});saveSession();showUndo("done "+n+" occurrence(s)");render();return;}
+  }
+  var row=btn.closest(".task");if(!row)return;var a=btn.dataset.a,d=row.dataset,df=document.getElementById(safeId(d.key));
+  if(a==="done"){df.className="doneform";df.dataset.mode="done";df.style.display="flex";return;}
+  if(a==="resch"){df.className="doneform resch";df.dataset.mode="resch";df.style.display="flex";return;}
+  if(a==="cancelf"){df.style.display="none";return;}
+  if(a==="confirmf"){var date=df.querySelector(".dfd").value||todayISO();
+    if(df.dataset.mode==="resch")commit(d,"shifted",{date:date});
+    else commit(d,"done",{date:date,crew:val(df,".dfc"),qty:val(df,".dfq"),unit:val(df,".dfu"),note:val(df,".dfn")});
+    df.style.display="none";return;}
+  if(a==="assign"){openAssign(btn,d);return;}
+  if(a==="skip"){if(!confirm("Skip this task? You can undo it."))return;commit(d,"skipped",{});return;}
+  if(a==="undo"){rowUndo(d.key);return;}
+}
+function val(df,sel){var e=df.querySelector(sel);return e?e.value:"";}
+function newEv(d,action){return{entry_id:"S-"+Date.now()+"-"+Math.floor(Math.random()*99999),event_ts:new Date().toISOString().slice(0,19),cycle_id:d.c,task_code:d.t,occurrence_index:d.i,scheduled_date:d.s,action:action,new_date:"",done_date:"",anchor_name:"",by:getReporter(),source_entry_id:"",manager:"",adhoc_plot_no:"",adhoc_label:"",adhoc_category:"",adhoc_manager:"",adhoc_labour_days:"",crew_size:"",qty:"",qty_unit:"",note:"",notes:"planner v3"};}
+function pushDone(d,date){var ev=newEv(d,"done");ev.done_date=date;sessionLog.push(ev);lastEventId=ev.entry_id;}
+function commit(d,action,x){x=x||{};var ev=newEv(d,action);
+  if(action==="done"){ev.done_date=x.date;if(x.by)ev.by=x.by;if(x.crew)ev.crew_size=x.crew;if(x.qty)ev.qty=x.qty;if(x.unit)ev.qty_unit=x.unit;if(x.note)ev.note=x.note;}
+  else if(action==="shifted")ev.new_date=x.date;
+  else if(action==="assigned")ev.manager=x.manager;
+  sessionLog.push(ev);lastEventId=ev.entry_id;saveSession();showUndo(action);render();}
+function showUndo(action){var b=el("undobar");el("undomsg").textContent="Recorded: "+action+".";b.style.display="flex";}
+function rowUndo(key){var before=sessionLog.length;sessionLog=sessionLog.filter(function(e){return((e.cycle_id||"")+"|"+e.task_code+"|"+e.occurrence_index)!==key;});if(sessionLog.length!==before){saveSession();el("undobar").style.display="none";render();}}
+el("undobtn")&&el("undobtn").addEventListener("click",function(){sessionLog=sessionLog.filter(function(e){return e.entry_id!==lastEventId;});saveSession();el("undobar").style.display="none";render();});
+
+/* ---------- suggestions ---------- */
+function renderSuggestions(){
+  if(!ACTIVITY.length)return"";
+  var wide=gen({rangeStart:ISO(AD(P(el("asof").value),-200)),rangeEnd:ISO(AD(P(el("asof").value),60))});
+  var sug=JamatCal.autoMatch(ACTIVITY,wide.occurrences,5);
+  var m=el("mgr").value,c=el("crop").value,pl=el("plot").value;
+  sug=sug.filter(function(s){var c0=s.chosen||(s.candidates&&s.candidates[0]);if(!c0)return false;
+    if(m&&c0.manager!==m)return false;if(c&&c0.crop!==c)return false;if(pl&&String(c0.plot_no)!==String(pl))return false;return true;});
+  if(!sug.length)return"";
+  var h='<div class="sugg"><h3>Suggested completions from field reports ('+sug.length+')</h3>';
+  sug.forEach(function(s){
+    if(s.ambiguous){h+='<div class="srow"><span class="amb">plot '+s.plot_no+' · '+s.detail+' @'+fmt(s.date)+'</span><span class="who">'+esc(s.by)+'</span><span>which crop? </span>'+s.candidates.map(function(cc){return '<button data-sg="pick" data-key="'+esc(keyOf(cc))+'" data-date="'+s.date+'" data-by="'+esc(s.by)+'">'+esc(cc.crop)+'</button>';}).join('')+'</div>';}
+    else{var cc=s.chosen;h+='<div class="srow"><span>plot '+s.plot_no+' · <b>'+esc(cc.field_label||cc.label)+'</b> ('+esc(cc.crop)+')</span><span class="who">reported '+fmt(s.date)+' by '+esc(s.by)+'</span><button data-sg="confirm" data-key="'+esc(keyOf(cc))+'" data-date="'+s.date+'" data-by="'+esc(s.by)+'">✓ Confirm done</button></div>';}
+  });
+  h+='<div class="note">Matched on plot + activity type + date (±5 days). Confirming records the completion with the reported date and reporter — no double entry.</div></div>';
+  return h;
+}
+
+/* ---------- YEAR (drill + pattern) ---------- */
+function windowOverlapsMonth(o,mIdx,year){if(!o.end_date)return +o.scheduled_date.slice(5,7)===mIdx+1&&+o.scheduled_date.slice(0,4)===year;var s=P(o.scheduled_date),ed=P(o.end_date),first=new Date(Date.UTC(year,mIdx,1)),last=new Date(Date.UTC(year,mIdx+1,0));return s.getTime()<=last.getTime()&&ed.getTime()>=first.getTime();}
+function renderYear(){
+  var year=+el("year").value;
+  var res=gen({rangeStart:year+"-01-01",rangeEnd:year+"-12-31",ignorePlanStart:true});renderHealth(res);
+  var occ=applyFilters(res.occurrences);
+  var crops=TEMPLATES.map(function(t){return t.crop_name;}).filter(function(c){return occ.some(function(o){return o.crop===c;});});
+  var html='<h2 class="vh">Seasonal overview '+year+' <span style="font-weight:400;color:var(--muted);font-size:12px">— cell = person-days · tap a cell to open that month · hatched = pattern before a block’s plan-start</span></h2>';
+  html+='<div class="note">Rain seasons: <b>major</b> Mar–Jul · <b>minor</b> Aug–Nov.</div>';
+  if(!crops.length)html+='<div class="empty">No activity for the selected filters in '+year+'.</div>';
+  crops.forEach(function(crop){
+    var co=occ.filter(function(o){return o.crop===crop;});
+    html+='<div class="cropblock"><h3>'+crop+'</h3><div class="ymatrix-scroll"><table class="ymatrix"><thead><tr><th>Activity</th>';
+    for(var m=0;m<12;m++){var rc=(m>=2&&m<=6)?"rain-major":((m>=7&&m<=10)?"rain-minor":"");html+='<th class="'+rc+'">'+MONTHS[m]+'</th>';}
+    html+='</tr></thead><tbody>';
+    CATS.forEach(function(cat){
+      var cc=co.filter(function(o){return o.category===cat;});if(!cc.length)return;
+      html+='<tr><td class="catcell" style="border-left:4px solid '+CATCOL[cat]+'">'+CATLAB[cat]+'</td>';
+      for(var m=0;m<12;m++){
+        var inM=cc.filter(function(o){return o.type==="window"?windowOverlapsMonth(o,m,year):(+o.scheduled_date.slice(5,7)===m+1);});
+        var pd=inM.reduce(function(s,o){return s+(o.labour_days||0);},0);
+        var patternAll=inM.length&&inM.every(function(o){return o.pattern;});
+        var op=inM.length?Math.min(0.85,0.18+inM.length*0.12):0;
+        var title=inM.length?esc(inM.slice(0,8).map(function(o){return fmt(o.scheduled_date)+" "+(o.field_label||o.label);}).join(" | ")):"";
+        var disp=inM.length?(pd>=10?Math.round(pd):(pd>0?pd.toFixed(1):"•")):"";
+        var cls=(inM.length?"on":"")+(patternAll?" pattern":"");
+        var mm=year+"-"+String(m+1).padStart(2,"0")+"-01";
+        html+='<td class="'+cls+'" data-crop="'+esc(crop)+'" data-month="'+mm+'" title="'+title+'" style="'+(inM.length?"background:"+hexA(CATCOL[cat],op):"")+'">'+(patternAll&&disp?"("+disp+")":disp)+'</td>';
+      }
+      html+='</tr>';
+    });
+    html+='</tbody></table></div></div>';
+  });
+  el("view").innerHTML=html;
+}
+
+/* ---------- MONTH ---------- */
+function weekBuckets(occ,start,end){var weeks=[],cur=mondayOf(start);while(cur.getTime()<=end.getTime()){weeks.push({start:ISO(cur),byMgr:{},total:0});cur=AD(cur,7);}occ.forEach(function(o){if(o.labour_days==null)return;var wm=ISO(mondayOf(P(o.scheduled_date)));var wk=weeks.filter(function(w){return w.start===wm;})[0];if(!wk)return;wk.byMgr[o.manager]=(wk.byMgr[o.manager]||0)+o.labour_days;wk.total+=o.labour_days;});return weeks;}
+function renderMonth(){
+  var asof=P(el("asof").value),start=mondayOf(asof),end=AD(start,7*8-1); // rolling 8 weeks from this week
+  var res=gen({rangeStart:ISO(start),rangeEnd:ISO(end)});renderHealth(res);
+  var occ=applyFilters(res.occurrences).filter(function(o){return o.status!=="skipped";});
+  var mgrs=MANAGERS.filter(function(m){return occ.some(function(o){return o.manager===m;});});
+  var html=renderSuggestions()+'<h2 class="vh">Manpower planner — rolling 8 weeks from '+fmt(ISO(start))+'</h2>';
+  var totalCap=0;
+  html+='<div class="panel"><table class="mtable"><thead><tr><th>Manager</th><th>crew</th><th>capacity pd/wk</th><th>8-week workload</th><th>avg pd/wk</th></tr></thead><tbody>';
+  mgrs.forEach(function(m){var wf=WORKFORCE[m]||{crew:0,days:6};var cap=wf.crew*wf.days;totalCap+=cap;
+    var mo=occ.filter(function(o){return o.manager===m;});var pd=mo.reduce(function(s,o){return s+(o.labour_days||0);},0);var avg=pd/8;
+    html+='<tr><td>'+m+'</td><td>'+wf.crew+'</td><td>'+cap+'</td><td>'+Math.round(pd)+'</td><td class="'+(cap&&avg>cap?"short":"")+'">'+Math.round(avg)+'</td></tr>';});
+  html+='</tbody></table></div>';
+  var weeks=weekBuckets(occ,start,end);var maxWeek=Math.max.apply(null,weeks.map(function(w){return w.total;}).concat([0]));var scale=Math.max(maxWeek,totalCap)*1.08||1;
+  html+='<div class="panel"><h2 class="vh">Weekly workload vs capacity (person-days)</h2>';
+  weeks.forEach(function(w){var over=totalCap>0&&w.total>totalCap;var segs="";mgrs.forEach(function(m){var v=w.byMgr[m]||0;if(v)segs+='<div class="seg" title="'+m+': '+Math.round(v*10)/10+' pd" style="width:'+(v/scale*100)+'%;background:'+mgrColor(m)+'"></div>';});var capLeft=totalCap>0?(totalCap/scale*100):-1;
+    html+='<div class="barrow"><span class="lab">wk '+fmt(w.start)+'</span><span class="track'+(over?" over":"")+'"><span class="fill" style="width:'+Math.min(100,w.total/scale*100)+'%">'+segs+'</span>'+(capLeft>=0?'<span class="capmark" style="left:'+capLeft+'%"></span>':'')+'</span><span class="val">'+Math.round(w.total)+(over?' <span class="short">(+'+Math.round(w.total-totalCap)+')</span>':'')+'</span></div>';});
+  html+='<div class="legend">'+mgrs.map(function(m){return '<span><span class="cbadge" style="background:'+mgrColor(m)+'"></span>'+m+' (crew '+((WORKFORCE[m]||{}).crew||0)+')</span>';}).join('')+'<span>│ = total crew capacity ('+totalCap+' pd/wk)</span></div></div>';
+  html+=catLegend();
+  weeks.forEach(function(w){var ws=w.start,we=ISO(AD(P(w.start),6));var wo=occ.filter(function(o){return o.scheduled_date>=ws&&o.scheduled_date<=we;});
+    if(!wo.length)return;
+    html+='<div class="grp">Week of '+fmt(ws)+' · '+wo.length+' task(s) · '+Math.round(wo.reduce(function(s,o){return s+(o.labour_days||0);},0))+' pd</div>';
+    mgrs.forEach(function(m){var mm2=wo.filter(function(o){return o.manager===m;});if(!mm2.length)return;html+='<div class="subgrp">'+m+'</div>'+renderList(mm2.sort(byDate));});});
+  el("view").innerHTML=html;
+}
+
+/* ---------- WEEK ---------- */
+function renderWeek(){
+  var asof=P(el("asof").value),revS=AD(asof,-7),revE=AD(asof,-1),plnS=asof,plnE=AD(asof,6);
+  var res=gen({rangeStart:ISO(revS),rangeEnd:ISO(plnE)});renderHealth(res);
+  var occ=applyFilters(res.occurrences);
+  function inR(o,a,b){return o.scheduled_date>=ISO(a)&&o.scheduled_date<=ISO(b);}
+  var rev=occ.filter(function(o){return inR(o,revS,revE)&&o.status!=="skipped";});
+  var pln=occ.filter(function(o){return inR(o,plnS,plnE)&&o.status!=="skipped";});
+  var done=rev.filter(function(o){return o.status==="done";}).length,notRep=rev.filter(function(o){return o.status==="not_reported";}).length,missed=rev.filter(function(o){return o.status==="overdue";}).length;
+  var denom=done+missed,pct=denom>0?Math.round(done/denom*100):null;
+  var pdNext={};pln.forEach(function(o){if(o.labour_days!=null)pdNext[o.manager]=(pdNext[o.manager]||0)+o.labour_days;});
+  var html=renderSuggestions()+catLegend()+'<div class="twocol">';
+  html+='<div class="panel"><h2 class="vh">◀ Review — last 7 days ('+fmt(ISO(revS))+' – '+fmt(ISO(revE))+')</h2>';
+  html+='<div class="statline"><div><b>'+rev.length+'</b> scheduled</div><div><span class="pill green">'+done+' done</span></div><div><span class="pill grey">'+notRep+' not reported</span></div>'+(missed?'<div><span class="pill red">'+missed+' missed (critical)</span></div>':'')+'<div><b>'+(pct==null?"—":pct+"%")+'</b> of reported</div></div>';
+  html+='<div class="note">"Not reported" is not counted as missed. Only critical tasks past their window count as missed.</div>';
+  if(!rev.length)html+='<div class="empty">Nothing scheduled last week.</div>';else html+=renderList(rev.sort(byDate));
+  html+='</div><div class="panel"><h2 class="vh">▶ Plan — next 7 days ('+fmt(ISO(plnS))+' – '+fmt(ISO(plnE))+')</h2>';
+  var pl=Object.keys(pdNext).map(function(m){return m+': '+Math.round(pdNext[m]*10)/10+' pd';}).join(' · ');
+  html+='<div class="statline"><div><b>'+pln.length+'</b> tasks</div><div>'+(pl||'—')+'</div></div>';
+  if(!pln.length)html+='<div class="empty">Nothing scheduled next week.</div>';else html+=renderList(pln.sort(byDate));
+  html+='</div></div>';
+  el("view").innerHTML=html;
+}
+
+/* ---------- DAILY ---------- */
+function renderDaily(){
+  var asof=el("asof").value;var res=gen({rangeStart:ISO(AD(P(asof),-60)),rangeEnd:ISO(AD(P(asof),1))});renderHealth(res);
+  var occ=applyFilters(res.occurrences).filter(function(o){return o.scheduled_date<=asof&&["overdue","not_reported","in_window","due_soon"].indexOf(o.status)>=0;});
+  var mgrs=MANAGERS.filter(function(m){return occ.some(function(o){return o.manager===m;});});
+  var html=renderSuggestions()+renderIncidentsPanel()+'<h2 class="vh">Today’s work list — as of '+fmt(asof)+'</h2>';
+  html+='<div class="legend"><span><span class="st in_window" style="padding:1px 6px">on time</span> inside tolerance</span><span><span class="st not_reported" style="padding:1px 6px">not reported</span> awaiting a log entry</span><span><span class="st overdue" style="padding:1px 6px">overdue</span> critical, past window</span></div>'+catLegend();
+  if(!occ.length)html+='<div class="empty">Nothing outstanding as of this date.</div>';
+  mgrs.forEach(function(m){var mo=occ.filter(function(o){return o.manager===m;});if(!mo.length)return;html+='<div class="grp">'+m+' · '+mo.length+' task(s)</div>'+renderList(mo.sort(byDate));});
+  html+='<div class="panel"><h2 class="vh">WhatsApp export</h2><textarea id="wa" readonly></textarea><div class="acts"><button class="btn" id="copywa">Copy for WhatsApp</button></div></div>';
+  el("view").innerHTML=html;
+  var wa="";mgrs.forEach(function(m){var mo=occ.filter(function(o){return o.manager===m;});if(!mo.length)return;wa+="JamatAgro — "+m+" — "+fmt(asof)+"\n";var byPlot={};mo.forEach(function(o){(byPlot[o.plot_no]=byPlot[o.plot_no]||[]).push(o);});Object.keys(byPlot).sort(function(a,b){return a-b;}).forEach(function(pn){var r=byPlot[pn];wa+="Plot "+pn+(r[0].area_ha?" ("+r[0].area_ha+" ha)":"")+"\n";r.forEach(function(o){wa+="  • "+(o.critical?"‼ ":"")+(o.field_label||o.label)+(o.inputs?" ["+o.inputs+"]":"")+"\n";});});wa+="\n";});
+  var t=el("wa");if(t)t.value=wa.trim()||"(nothing outstanding)";
+  var cb=el("copywa");if(cb)cb.addEventListener("click",function(){t.select();try{document.execCommand("copy");}catch(e){}if(navigator.clipboard)navigator.clipboard.writeText(t.value);this.textContent="Copied ✓";var self=this;setTimeout(function(){self.textContent="Copy for WhatsApp";},1200);});
+}
+
+/* ---------- PLOT detail ---------- */
+function renderPlot(){
+  var pv=el("plot").value;var asof=el("asof").value;
+  var res=gen({rangeStart:ISO(AD(P(asof),-45)),rangeEnd:ISO(AD(P(asof),400))});renderHealth(res);
+  if(!pv){el("view").innerHTML='<div class="plotpick"><label>Plot no <input type="number" id="plotquick" style="width:90px"></label><button class="btn" id="plotgo">Show plot</button></div><div class="empty">Enter a plot number to see its full plan across every crop and ad-hoc task.</div>';
+    var g=el("plotgo");if(g)g.addEventListener("click",function(){el("plot").value=el("plotquick").value;render();});return;}
+  var occ=res.occurrences.filter(function(o){return String(o.plot_no)===String(pv)&&o.status!=="skipped";});
+  var mgr=el("mgr").value;if(mgr)occ=occ.filter(function(o){return o.manager===mgr;});
+  var html=renderIncidentsPanel(pv)+'<h2 class="vh">Plot '+pv+' — full plan across crops <span style="font-weight:400;color:var(--muted);font-size:12px">('+occ.length+' tasks)</span></h2>';
+  if(!occ.length){html+='<div class="empty">No planned tasks for plot '+pv+'.</div>';el("view").innerHTML=html;return;}
+  var crops={};occ.forEach(function(o){(crops[o.crop]=crops[o.crop]||[]).push(o);});
+  Object.keys(crops).forEach(function(cr){var arr=crops[cr];html+='<div class="grp">'+cr+' · '+arr.length+' task(s)</div>'+renderList(arr.sort(byDate));});
+  el("view").innerHTML=html;
+}
+
+/* ---------- dispatch ---------- */
+function render(){SKEYS=sessionKeys();el("yearwrap").style.display=activeTab==="year"?"":"none";updateBadge();
+  if(activeTab==="daily")renderDaily();else if(activeTab==="week")renderWeek();else if(activeTab==="month")renderMonth();else if(activeTab==="plot")renderPlot();else if(activeTab==="report")renderReport();else renderYear();}
+
+function initControls(){
+  loadSession();el("asof").value=todayISO();
+  // deep-link from the map: ?plot=N opens the Plot tab pre-filtered
+  try{var qp=new URLSearchParams(location.search),qplot=qp.get("plot");if(qplot){el("plot").value=qplot;activeTab="plot";}}catch(e){}
+  var ys=el("year");[2025,2026,2027,2028].forEach(function(y){var o=document.createElement("option");o.value=y;o.textContent=y;ys.appendChild(o);});ys.value=String(Math.max(2025,Math.min(2028,+todayISO().slice(0,4))));
+  var mg=el("mgr"),afm=el("af_mgr");MANAGERS.forEach(function(m){var o=document.createElement("option");o.value=m;o.textContent=m;mg.appendChild(o);afm.appendChild(o.cloneNode(true));});
+  var cr=el("crop");TEMPLATES.forEach(function(t){var o=document.createElement("option");o.value=t.crop_name;o.textContent=t.crop_name;cr.appendChild(o);});
+  el("af_date").value=todayISO();
+  // reporter identity (persisted)
+  try{var rp=localStorage.getItem("jamat_reporter");if(rp)el("reporter").value=rp;}catch(e){}
+  el("reporter").addEventListener("change",function(){try{localStorage.setItem("jamat_reporter",el("reporter").value);}catch(e){}});
+  // incident/task toggle on add form
+  el("af_type").addEventListener("change",function(){var inc=this.value==="incident";el("af_incwrap").style.display=inc?"":"none";el("af_catwrap").style.display=inc?"none":"";el("af_label").placeholder=inc?"what happened (optional)":"e.g. Emergency spray";});
+  document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",function(){document.querySelectorAll(".tab").forEach(function(x){x.classList.remove("active");});t.classList.add("active");activeTab=t.dataset.tab;el("undobar").style.display="none";render();});});
+  ["asof","mgr","crop","year","plot","cat","statusf","critonly"].forEach(function(id){el(id).addEventListener("change",render);});
+  el("addbtn").addEventListener("click",function(){var f=el("addform");f.style.display=f.style.display==="none"?"flex":"none";el("af_date").value=el("asof").value;});
+  el("af_cancel").addEventListener("click",function(){el("addform").style.display="none";});
+  el("af_save").addEventListener("click",function(){var isInc=el("af_type").value==="incident";var plot=el("af_plot").value,label=el("af_label").value,date=el("af_date").value;
+    if(isInc)label=el("af_inc").value+(label?" — "+label:"");
+    if(!label||!date){alert("Need at least a label/type and a date.");return;}
+    if(plot&&PLOTS.indexOf(+plot)<0){alert("Plot "+plot+" is not in the register.");return;}
+    var ev={entry_id:(isInc?"INC-":"AD-")+Date.now(),event_ts:new Date().toISOString().slice(0,19),cycle_id:"",task_code:isInc?"INCIDENT":"ADHOC",occurrence_index:"0",scheduled_date:"",action:isInc?"incident":"adhoc_created",new_date:date,done_date:"",anchor_name:"",by:getReporter(),source_entry_id:"",manager:el("af_mgr").value,adhoc_plot_no:plot,adhoc_label:label,adhoc_category:isInc?"incident":el("af_cat").value,adhoc_manager:el("af_mgr").value,adhoc_labour_days:isInc?"":el("af_lab").value,crew_size:"",qty:"",qty_unit:"",note:"",notes:isInc?"incident":"ad-hoc"};
+    sessionLog.push(ev);
+    saveSession();el("af_label").value="";el("af_plot").value="";el("af_lab").value="";el("addform").style.display="none";render();});
+  el("printbtn").addEventListener("click",function(){window.print();});
+  el("exportbtn").addEventListener("click",function(){var rows=baseLog.concat(sessionLog);var head=LOGCOLS.join(",");var body=rows.map(function(r){return LOGCOLS.map(function(c){var v=(r[c]==null?"":String(r[c]));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(",");}).join("\n");var blob=new Blob([head+"\n"+body+"\n"],{type:"text/csv"});var u=URL.createObjectURL(blob);var a=document.createElement("a");a.href=u;a.download="JamatAgro_TaskLog_"+getReporter().replace(/[^a-z0-9]/gi,"_")+".csv";a.click();});
+  el("resetbtn").addEventListener("click",function(){if(sessionLog.length&&!confirm("Clear "+sessionLog.length+" unsynced change(s)? This cannot be undone."))return;sessionLog=[];saveSession();el("undobar").style.display="none";render();});
+  window.addEventListener("beforeunload",function(ev){if(sessionLog.length){ev.preventDefault();ev.returnValue="";}});
+  document.querySelectorAll(".tab").forEach(function(x){x.classList.toggle("active",x.dataset.tab===activeTab);});
+  wireView();
+}
+initControls();render();loadLive();
+</script></body></html>

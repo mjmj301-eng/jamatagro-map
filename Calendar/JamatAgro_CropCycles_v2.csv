@@ -1,0 +1,10 @@
+cycle_id,plot_no,crop,template_version,anchor_type,anchor_date,anchor_status,plan_start_date,phase_override,season,vintage_year,area_ha,manager,status,notes
+CYC-2026-014,35,Oil palm,oil_palm@2.0,field_planting,2026-09-01,planned,2026-06-01,,minor,2026,2.4,Mr Hassan,active,2026 expansion establishment (plot 35)
+CYC-2026-015,36,Oil palm,oil_palm@2.0,field_planting,2026-09-15,planned,2026-06-01,,minor,2026,3.1,Mr Hassan,active,2026 expansion establishment (plot 36)
+CYC-2026-016,37,Oil palm,oil_palm@2.0,field_planting,2026-08-20,planned,2026-06-01,,minor,2026,1.8,Dr Iginla,active,2026 expansion establishment (plot 37)
+CYC-ONB-001,1,Oil palm,oil_palm@2.0,field_planting,2018-04-15,actual,2026-07-26,,perennial,2018,3.1,Dr Iginla,active,Mature block - harvest/pruning/fertilizer
+CYC-ONB-057,57,Oil palm,oil_palm@2.0,field_planting,2024-05-01,actual,2026-07-26,,perennial,2024,2.0,Dr Iginla,active,Immature block yr 2 - weeding/ablation/fert
+CYC-CAS-045,45,Cassava,cassava@1.0,field_planting,2026-04-20,actual,2026-04-01,,major,,2.0,Dr Iginla,active,Cassava major season (arable plot 45)
+CYC-TOM-046,46,Tomato,tomato@1.0,nursery_sowing,2026-03-10,actual,2026-03-10,,major,,0.5,Mr Hassan,active,Tomato major season (arable plot 46)
+CYC-TOM-052,52,Tomato,tomato@1.0,nursery_sowing,2026-10-15,planned,2026-10-15,,dry,,0.4,Mr Hassan,active,Tomato dry season irrigated (arable plot 52)
+CYC-2026-099,999,Oil palm,oil_palm@9.9,field_planting,2026-09-01,planned,2026-06-01,,minor,2026,1.5,Mr Hassan,active,BAD ROW - template @9.9 missing AND plot 999 unknown

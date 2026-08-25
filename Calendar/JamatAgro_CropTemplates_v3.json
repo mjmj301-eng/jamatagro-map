@@ -1,0 +1,652 @@
+{
+ "_file": "JamatAgro_CropTemplates_v3.json",
+ "_spec": "JamatAgro Farm Calendar v2.0 \u2014 full lifecycle for oil palm, cassava, tomato. Aligned to Master Plot Register (maps_to_current_use) + Activity Log Detail vocabulary. labour_per_ha = person-days per hectare (manager-review defaults; not payroll).",
+ "templates": [
+  {
+   "template_id": "oil_palm",
+   "crop_name": "Oil palm",
+   "maps_to_current_use": "Oil palm",
+   "version": "2.0",
+   "display_name": "Oil palm (plantation)",
+   "cycle_kind": "perennial",
+   "anchors": [
+    "field_planting"
+   ],
+   "default_seasons": {
+    "major": {
+     "anchor": "field_planting",
+     "window": [
+      "04-01",
+      "05-31"
+     ]
+    },
+    "minor": {
+     "anchor": "field_planting",
+     "window": [
+      "08-15",
+      "09-30"
+     ]
+    }
+   },
+   "phases": [
+    {
+     "phase_id": "establishment",
+     "entry": {
+      "anchor": "field_planting",
+      "offset_days": -60
+     },
+     "exit": {
+      "anchor": "field_planting",
+      "offset_days": 365
+     }
+    },
+    {
+     "phase_id": "immature",
+     "entry": {
+      "anchor": "field_planting",
+      "offset_days": 365
+     },
+     "exit": {
+      "anchor": "field_planting",
+      "offset_days": 1460
+     }
+    },
+    {
+     "phase_id": "mature",
+     "entry": {
+      "anchor": "field_planting",
+      "offset_days": 1460
+     },
+     "exit": null
+    }
+   ],
+   "tasks": [
+    {
+     "task_code": "land_clear_prep",
+     "label": "Land clearing & burning-free prep",
+     "field_label": "Clear the land (no burning)",
+     "category": "infrastructure",
+     "activity_detail": "Clearing",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": -60,
+     "window_days": 14,
+     "phase": "establishment",
+     "labour_per_ha": 8,
+     "inputs": "cutlasses, no burning",
+     "critical": true
+    },
+    {
+     "task_code": "lining_pegging",
+     "label": "Lining & pegging (9 m triangular, ~143/ha)",
+     "field_label": "Mark out palm positions (9 m spacing)",
+     "category": "infrastructure",
+     "activity_detail": "Other",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": -30,
+     "window_days": 10,
+     "phase": "establishment",
+     "labour_per_ha": 2,
+     "inputs": "pegs, measuring line",
+     "critical": false
+    },
+    {
+     "task_code": "hole_digging",
+     "label": "Hole digging (60x60x60 cm)",
+     "field_label": "Dig planting holes",
+     "category": "infrastructure",
+     "activity_detail": "Other",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": -14,
+     "window_days": 7,
+     "phase": "establishment",
+     "labour_per_ha": 6,
+     "inputs": "diggers",
+     "critical": false
+    },
+    {
+     "task_code": "transplant",
+     "label": "Transplant seedlings to field",
+     "field_label": "Plant the palm seedlings",
+     "category": "planting",
+     "activity_detail": "Planting",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": 0,
+     "window_days": 14,
+     "phase": "establishment",
+     "labour_per_ha": 4,
+     "inputs": "seedlings ~143/ha",
+     "sets_anchor": "field_planting",
+     "critical": true
+    },
+    {
+     "task_code": "cover_crop",
+     "label": "Cover crop establishment (Pueraria)",
+     "field_label": "Plant cover crop (Pueraria)",
+     "category": "planting",
+     "activity_detail": "Planting",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": 14,
+     "window_days": 14,
+     "phase": "establishment",
+     "labour_per_ha": 1.5,
+     "inputs": "Pueraria seed",
+     "critical": false
+    },
+    {
+     "task_code": "beat_up",
+     "label": "Beat-up / replace failed seedlings",
+     "field_label": "Replace any failed seedlings",
+     "category": "planting",
+     "activity_detail": "Planting",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": 60,
+     "window_days": 21,
+     "phase": "establishment",
+     "labour_per_ha": 1,
+     "inputs": "reserve seedlings 5-10%",
+     "critical": false
+    },
+    {
+     "task_code": "ring_weeding_imm",
+     "label": "Ring weeding (immature)",
+     "field_label": "Weed around each palm",
+     "category": "weeding",
+     "activity_detail": "Weeding",
+     "type": "seasonal",
+     "months": [
+      4,
+      7,
+      10
+     ],
+     "phase": "immature",
+     "labour_per_ha": 2,
+     "inputs": "manual/selective spray",
+     "critical": false
+    },
+    {
+     "task_code": "fert_immature",
+     "label": "Fertilizer (immature, onset of rains)",
+     "field_label": "Apply fertilizer (young palms)",
+     "category": "fertilizer",
+     "activity_detail": "Fertiliser/Spraying",
+     "type": "seasonal",
+     "months": [
+      3,
+      9
+     ],
+     "phase": "immature",
+     "labour_per_ha": 1.5,
+     "inputs": "NPK + Mg",
+     "critical": false
+    },
+    {
+     "task_code": "ablation",
+     "label": "Ablation of early inflorescences",
+     "field_label": "Remove early flower bunches",
+     "category": "crop_protection",
+     "activity_detail": "Pruning",
+     "type": "recurring",
+     "anchor": "field_planting",
+     "interval_days": 60,
+     "active_from_days": 420,
+     "active_to_days": 900,
+     "phase": "immature",
+     "labour_per_ha": 1.5,
+     "inputs": "chisel",
+     "critical": false
+    },
+    {
+     "task_code": "pest_patrol_imm",
+     "label": "Pest patrol (immature)",
+     "field_label": "Check young palms for pests",
+     "category": "crop_protection",
+     "activity_detail": "Other",
+     "type": "recurring",
+     "anchor": "field_planting",
+     "interval_days": 30,
+     "active_from_days": 365,
+     "active_to_days": 1460,
+     "phase": "immature",
+     "labour_per_ha": 0.5,
+     "inputs": "scout",
+     "critical": false
+    },
+    {
+     "task_code": "harvest_round",
+     "label": "Harvest round (FFB, every ~12 days)",
+     "field_label": "Harvest ripe palm bunches",
+     "category": "harvest",
+     "activity_detail": "Harvest",
+     "type": "recurring",
+     "anchor": "field_planting",
+     "interval_days": 12,
+     "active_from_days": 1460,
+     "phase": "mature",
+     "labour_per_ha": 1.5,
+     "inputs": "chisel/pole, barrows",
+     "critical": true
+    },
+    {
+     "task_code": "pruning_mature",
+     "label": "Pruning (annual)",
+     "field_label": "Prune palm fronds",
+     "category": "crop_protection",
+     "activity_detail": "Pruning",
+     "type": "seasonal",
+     "months": [
+      1,
+      2
+     ],
+     "phase": "mature",
+     "labour_per_ha": 2,
+     "inputs": "pruning pole",
+     "critical": false
+    },
+    {
+     "task_code": "fert_mature",
+     "label": "Fertilizer (mature, split)",
+     "field_label": "Apply fertilizer (mature palms)",
+     "category": "fertilizer",
+     "activity_detail": "Fertiliser/Spraying",
+     "type": "seasonal",
+     "months": [
+      3,
+      9
+     ],
+     "phase": "mature",
+     "labour_per_ha": 1.5,
+     "inputs": "NPK + Mg + B",
+     "critical": false
+    },
+    {
+     "task_code": "path_maint",
+     "label": "Harvest path maintenance",
+     "field_label": "Clear the harvest paths",
+     "category": "infrastructure",
+     "activity_detail": "Other",
+     "type": "seasonal",
+     "months": [
+      2
+     ],
+     "phase": "mature",
+     "labour_per_ha": 1,
+     "inputs": "cutlass",
+     "critical": false
+    }
+   ]
+  },
+  {
+   "template_id": "cassava",
+   "crop_name": "Cassava",
+   "maps_to_current_use": "Arable",
+   "version": "1.0",
+   "display_name": "Cassava (long annual)",
+   "cycle_kind": "annual",
+   "anchors": [
+    "field_planting"
+   ],
+   "default_seasons": {
+    "major": {
+     "anchor": "field_planting",
+     "window": [
+      "04-01",
+      "06-15"
+     ]
+    },
+    "minor": {
+     "anchor": "field_planting",
+     "window": [
+      "09-01",
+      "10-15"
+     ]
+    }
+   },
+   "phases": [
+    {
+     "phase_id": "crop",
+     "entry": {
+      "anchor": "field_planting",
+      "offset_days": -30
+     },
+     "exit": null
+    }
+   ],
+   "tasks": [
+    {
+     "task_code": "land_prep_ridge",
+     "label": "Land prep / ridging",
+     "field_label": "Prepare and ridge the land",
+     "category": "infrastructure",
+     "activity_detail": "Clearing",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": -14,
+     "window_days": 10,
+     "labour_per_ha": 5,
+     "inputs": "ridger/hoe",
+     "critical": false
+    },
+    {
+     "task_code": "plant_cuttings",
+     "label": "Plant stem cuttings",
+     "field_label": "Plant cassava cuttings",
+     "category": "planting",
+     "activity_detail": "Planting",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": 0,
+     "window_days": 10,
+     "labour_per_ha": 4,
+     "inputs": "healthy stems",
+     "sets_anchor": "field_planting",
+     "critical": true
+    },
+    {
+     "task_code": "weed_1",
+     "label": "Weeding round 1 (critical)",
+     "field_label": "First weeding",
+     "category": "weeding",
+     "activity_detail": "Weeding",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": 25,
+     "window_days": 10,
+     "labour_per_ha": 3,
+     "inputs": "manual/pre-emergence",
+     "critical": true
+    },
+    {
+     "task_code": "weed_2",
+     "label": "Weeding round 2",
+     "field_label": "Second weeding",
+     "category": "weeding",
+     "activity_detail": "Weeding",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": 56,
+     "window_days": 12,
+     "labour_per_ha": 3,
+     "inputs": "manual",
+     "critical": false
+    },
+    {
+     "task_code": "fert_cassava",
+     "label": "Fertilizer (NPK, optional)",
+     "field_label": "Apply fertilizer",
+     "category": "fertilizer",
+     "activity_detail": "Fertiliser/Spraying",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": 56,
+     "window_days": 14,
+     "labour_per_ha": 1.5,
+     "inputs": "NPK 15-15-15",
+     "critical": false
+    },
+    {
+     "task_code": "weed_3",
+     "label": "Weeding round 3",
+     "field_label": "Third weeding",
+     "category": "weeding",
+     "activity_detail": "Weeding",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": 90,
+     "window_days": 14,
+     "labour_per_ha": 3,
+     "inputs": "manual",
+     "critical": false
+    },
+    {
+     "task_code": "pest_check_cassava",
+     "label": "Pest/disease check (mealybug, mosaic)",
+     "field_label": "Check for pests and disease",
+     "category": "crop_protection",
+     "activity_detail": "Other",
+     "type": "recurring",
+     "anchor": "field_planting",
+     "interval_days": 30,
+     "active_from_days": 30,
+     "active_to_days": 240,
+     "labour_per_ha": 0.5,
+     "inputs": "scout",
+     "critical": false
+    },
+    {
+     "task_code": "harvest_window",
+     "label": "Harvest window (month 9-15)",
+     "field_label": "Harvest cassava",
+     "category": "harvest",
+     "activity_detail": "Harvest",
+     "type": "window",
+     "anchor": "field_planting",
+     "start_offset_days": 270,
+     "end_offset_days": 450,
+     "labour_per_ha": 6,
+     "inputs": "lifting, transport",
+     "critical": false
+    },
+    {
+     "task_code": "stem_select",
+     "label": "Stem cutting selection for next season",
+     "field_label": "Select stems for next planting",
+     "category": "planting",
+     "activity_detail": "Other",
+     "type": "offset",
+     "anchor": "field_planting",
+     "offset_days": 270,
+     "window_days": 30,
+     "labour_per_ha": 1,
+     "inputs": "select & store stems",
+     "critical": false
+    }
+   ]
+  },
+  {
+   "template_id": "tomato",
+   "crop_name": "Tomato",
+   "maps_to_current_use": "Arable",
+   "version": "1.0",
+   "display_name": "Tomato (open field)",
+   "cycle_kind": "annual",
+   "anchors": [
+    "nursery_sowing",
+    "field_transplant"
+   ],
+   "default_seasons": {
+    "major": {
+     "anchor": "nursery_sowing",
+     "window": [
+      "03-01",
+      "04-15"
+     ]
+    },
+    "dry": {
+     "anchor": "nursery_sowing",
+     "window": [
+      "10-01",
+      "11-15"
+     ],
+     "requires_irrigation": true
+    }
+   },
+   "phases": [
+    {
+     "phase_id": "crop",
+     "entry": {
+      "anchor": "nursery_sowing",
+      "offset_days": 0
+     },
+     "exit": null
+    }
+   ],
+   "tasks": [
+    {
+     "task_code": "nursery_sow",
+     "label": "Nursery sowing",
+     "field_label": "Sow tomato seeds in nursery",
+     "category": "planting",
+     "activity_detail": "Planting",
+     "type": "offset",
+     "anchor": "nursery_sowing",
+     "offset_days": 0,
+     "window_days": 5,
+     "labour_per_ha": 3,
+     "inputs": "seed trays, media",
+     "critical": true
+    },
+    {
+     "task_code": "nursery_care",
+     "label": "Nursery care (watering, damping-off watch)",
+     "field_label": "Water and tend the nursery",
+     "category": "crop_protection",
+     "activity_detail": "Other",
+     "type": "recurring",
+     "anchor": "nursery_sowing",
+     "interval_days": 3,
+     "active_from_days": 3,
+     "active_to_days": 26,
+     "labour_per_ha": 0.4,
+     "inputs": "water, fungicide",
+     "critical": false
+    },
+    {
+     "task_code": "land_prep_beds",
+     "label": "Land prep + beds",
+     "field_label": "Prepare the beds",
+     "category": "infrastructure",
+     "activity_detail": "Clearing",
+     "type": "offset",
+     "anchor": "nursery_sowing",
+     "offset_days": 21,
+     "window_days": 7,
+     "labour_per_ha": 6,
+     "inputs": "beds, manure",
+     "critical": false
+    },
+    {
+     "task_code": "transplant_tom",
+     "label": "Transplant to field",
+     "field_label": "Transplant seedlings to field",
+     "category": "planting",
+     "activity_detail": "Planting",
+     "type": "offset",
+     "anchor": "nursery_sowing",
+     "offset_days": 28,
+     "window_days": 7,
+     "labour_per_ha": 5,
+     "inputs": "seedlings",
+     "sets_anchor": "field_transplant",
+     "critical": true
+    },
+    {
+     "task_code": "staking",
+     "label": "Staking",
+     "field_label": "Stake the plants",
+     "category": "infrastructure",
+     "activity_detail": "Other",
+     "type": "offset",
+     "anchor": "field_transplant",
+     "offset_days": 14,
+     "window_days": 7,
+     "labour_per_ha": 4,
+     "inputs": "stakes, twine",
+     "critical": false
+    },
+    {
+     "task_code": "fert_split1",
+     "label": "Fertilizer split 1",
+     "field_label": "Apply fertilizer (1st)",
+     "category": "fertilizer",
+     "activity_detail": "Fertiliser/Spraying",
+     "type": "offset",
+     "anchor": "field_transplant",
+     "offset_days": 10,
+     "window_days": 5,
+     "labour_per_ha": 1,
+     "inputs": "NPK",
+     "critical": false
+    },
+    {
+     "task_code": "fert_split2",
+     "label": "Fertilizer split 2",
+     "field_label": "Apply fertilizer (2nd)",
+     "category": "fertilizer",
+     "activity_detail": "Fertiliser/Spraying",
+     "type": "offset",
+     "anchor": "field_transplant",
+     "offset_days": 30,
+     "window_days": 5,
+     "labour_per_ha": 1,
+     "inputs": "NPK",
+     "critical": false
+    },
+    {
+     "task_code": "fert_split3",
+     "label": "Fertilizer split 3",
+     "field_label": "Apply fertilizer (3rd)",
+     "category": "fertilizer",
+     "activity_detail": "Fertiliser/Spraying",
+     "type": "offset",
+     "anchor": "field_transplant",
+     "offset_days": 50,
+     "window_days": 5,
+     "labour_per_ha": 1,
+     "inputs": "NPK/K",
+     "critical": false
+    },
+    {
+     "task_code": "scout_tuta",
+     "label": "Pest & disease scouting (Tuta absoluta)",
+     "field_label": "Scout for tomato leafminer (Tuta)",
+     "category": "crop_protection",
+     "activity_detail": "Other",
+     "type": "recurring",
+     "anchor": "field_transplant",
+     "interval_days": 7,
+     "active_from_days": 7,
+     "active_to_days": 90,
+     "labour_per_ha": 0.5,
+     "inputs": "pheromone traps, scout",
+     "critical": true
+    },
+    {
+     "task_code": "first_harvest",
+     "label": "First harvest",
+     "field_label": "First harvest",
+     "category": "harvest",
+     "activity_detail": "Harvest",
+     "type": "offset",
+     "anchor": "field_transplant",
+     "offset_days": 60,
+     "window_days": 5,
+     "labour_per_ha": 3,
+     "inputs": "crates",
+     "critical": false
+    },
+    {
+     "task_code": "harvest_picks",
+     "label": "Harvest picks (every 3-4 days)",
+     "field_label": "Pick ripe tomatoes",
+     "category": "harvest",
+     "activity_detail": "Harvest",
+     "type": "recurring",
+     "anchor": "field_transplant",
+     "interval_days": 3,
+     "active_from_days": 60,
+     "active_to_days": 100,
+     "labour_per_ha": 2,
+     "inputs": "crates, transport",
+     "critical": false
+    }
+   ]
+  }
+ ],
+ "version_note": "v3 adds plain-language field_label per task (Wave 3, FC-03). Agronomic 'label' retained."
+}

@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JamatAgro · Farm Calendar — Planning (Year / Month / Week)</title>
+<style>
+  :root{--ink:#1a2b22;--ink2:#2f4a3c;--line:#e2e6e3;--muted:#6b7a72;--bg:#f6f8f6;
+        --red:#c0392b;--redbg:#fdecea;--amber:#b9770e;--amberbg:#fdf3e2;--green:#1f7a4d;--greenbg:#e7f4ec;--grey:#8a978f;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  header{background:var(--ink);color:#fff;padding:12px 18px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  header b{font-size:17px}header span{color:#b7c9bf;font-size:13px}
+  .tabs{display:flex;gap:2px;background:var(--ink2);padding:0 10px}
+  .tab{font:inherit;font-size:14px;color:#cfe0d7;background:transparent;border:none;padding:11px 16px;cursor:pointer;border-bottom:3px solid transparent}
+  .tab.active{color:#fff;border-bottom-color:#8fd0aa;font-weight:600}
+  .wrap{max-width:1120px;margin:0 auto;padding:16px}
+  .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:end;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+  .controls label{display:flex;flex-direction:column;font-size:11px;color:var(--muted);gap:4px;text-transform:uppercase;letter-spacing:.04em}
+  .controls select,.controls input[type=date]{font:inherit;font-size:14px;padding:6px 8px;border:1px solid #cdd6d0;border-radius:7px;color:var(--ink);background:#fff}
+  .btn{font:inherit;font-size:13px;border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:8px;padding:7px 12px;cursor:pointer}
+  .btn.sec{background:#fff;color:var(--ink)} .btn.sec:hover{background:#eef4ef}
+  .addform{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+  .addform label{display:flex;flex-direction:column;font-size:11px;color:var(--muted);gap:4px}
+  .addform input,.addform select{font:inherit;font-size:13px;padding:6px;border:1px solid #cdd6d0;border-radius:6px}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:14px}
+  .health h3{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .health .row{font-size:13px;color:var(--red);padding:3px 0} .health .ok{color:var(--green)}
+  /* year matrix */
+  .yearhead{font-size:15px;font-weight:700;color:var(--ink2);margin:4px 2px 10px}
+  .yearhead .rain{font-weight:400;font-size:12px;color:var(--muted);margin-left:8px}
+  .cropblock{margin-bottom:18px}
+  .cropblock h3{margin:0 0 6px;font-size:15px}
+  table.ymatrix{width:100%;border-collapse:collapse;font-size:12px;background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  table.ymatrix th,table.ymatrix td{border:1px solid #eef1ef;padding:5px 4px;text-align:center;width:6.5%}
+  table.ymatrix th:first-child,table.ymatrix td.catcell{text-align:left;width:20%;white-space:nowrap;font-weight:600;background:#fafbfa}
+  table.ymatrix th{background:#f0f4f1;font-weight:600;color:var(--ink2)}
+  table.ymatrix th.rain-major{background:#eef6ef}table.ymatrix th.rain-minor{background:#eaf1f5}
+  table.ymatrix td.on{color:#12321f;font-weight:700;cursor:default}
+  /* manpower bars */
+  .mpwrap{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.mpwrap{grid-template-columns:1fr}.mockup-hide{display:none}}
+  .barrow{display:grid;grid-template-columns:96px 1fr 54px;gap:8px;align-items:center;margin:4px 0;font-size:12px}
+  .barrow .lab{color:var(--muted)} .barrow .val{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2)}
+  .bar{height:16px;background:#eef1ef;border-radius:4px;display:flex;overflow:hidden}
+  .seg{height:100%}
+  .mtable{width:100%;border-collapse:collapse;font-size:13px}
+  .mtable th,.mtable td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:right}
+  .mtable th:first-child,.mtable td:first-child{text-align:left}
+  .peak{color:var(--red);font-weight:700}
+  /* task rows */
+  .grp{margin:14px 0 6px;font-size:14px;font-weight:700;color:var(--ink2);border-bottom:2px solid var(--line);padding-bottom:3px}
+  .subgrp{margin:8px 0 4px;font-size:13px;font-weight:600;color:var(--muted)}
+  .task{display:grid;grid-template-columns:70px 1fr 60px auto auto;gap:8px;align-items:center;padding:7px 8px;border-top:1px solid #eef1ef;background:#fff}
+  .task .d{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .task .t{font-size:13px}.task .t small{display:block;color:var(--muted);font-size:11px}
+  .task.done .t{color:var(--grey);text-decoration:line-through}
+  .task .pd{font-size:12px;color:var(--ink2);text-align:right}
+  .cbadge{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
+  .st{font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap}
+  .st.overdue{background:var(--redbg);color:var(--red)}.st.due_soon{background:var(--amberbg);color:var(--amber)}
+  .st.upcoming{background:#eef1ef;color:var(--grey)}.st.done{background:var(--greenbg);color:var(--green)}
+  .crit{color:var(--red);font-weight:700}
+  .act{display:flex;gap:3px}
+  .act button{font:inherit;font-size:11px;border:1px solid #cdd6d0;background:#fff;border-radius:5px;padding:2px 6px;cursor:pointer;color:var(--ink2)}
+  .act button:hover{background:#eef4ef}
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.twocol{grid-template-columns:1fr}}
+  .statline{display:flex;gap:16px;flex-wrap:wrap;margin:6px 0 10px;font-size:13px}
+  .statline b{font-size:17px}
+  .pill{padding:1px 8px;border-radius:20px;font-size:12px;font-weight:600}
+  .pill.red{background:var(--redbg);color:var(--red)}.pill.green{background:var(--greenbg);color:var(--green)}.pill.amber{background:var(--amberbg);color:var(--amber)}
+  .empty{color:var(--muted);font-size:14px;padding:16px;text-align:center}
+  .note{font-size:12px;color:var(--muted);margin:8px 2px}
+  h2.vh{font-size:15px;margin:0 0 8px}
+</style>
+</head>
+<body>
+<header><b>JamatAgro · Farm Calendar</b><span>Planning views — Year overview · Month planner · Week review</span></header>
+<div class="tabs">
+  <button class="tab active" data-tab="year">Year overview</button>
+  <button class="tab" data-tab="month">Month planner</button>
+  <button class="tab" data-tab="week">Week review</button>
+</div>
+<div class="wrap">
+  <div class="controls">
+    <label>As of<input type="date" id="asof" value="2026-07-26"></label>
+    <label id="yearwrap" style="display:none">Year<select id="year"></select></label>
+    <label>Manager<select id="mgr"><option value="">All managers</option></select></label>
+    <label>Crop<select id="crop"><option value="">All crops</option><option>Oil palm</option><option>Cassava</option><option>Tomato</option></select></label>
+    <button class="btn sec" id="addbtn">＋ Add activity</button>
+    <button class="btn sec" id="exportbtn">Export task_log</button>
+    <button class="btn sec" id="resetbtn">Reset</button>
+  </div>
+  <div class="addform" id="addform" style="display:none">
+    <label>Plot no<input id="af_plot" type="number" style="width:80px" placeholder="45"></label>
+    <label>Activity<input id="af_label" placeholder="e.g. Emergency spray" style="width:200px"></label>
+    <label>Date<input id="af_date" type="date"></label>
+    <label>Manager<select id="af_mgr"></select></label>
+    <label>Category<select id="af_cat"><option value="crop_protection">crop protection</option><option value="weeding">weeding</option><option value="fertilizer">fertilizer</option><option value="harvest">harvest</option><option value="infrastructure">infrastructure</option><option value="other">other</option></select></label>
+    <label>Labour (pd)<input id="af_lab" type="number" step="0.5" style="width:70px" placeholder="2"></label>
+    <button class="btn" id="af_save">Add</button>
+    <button class="btn sec" id="af_cancel">Cancel</button>
+  </div>
+  <div class="panel health" id="health"></div>
+  <div id="view"></div>
+  <div class="note">Overview mode (Year) shows the full-year seasonal pattern for every active block. Month &amp; Week views respect each cycle's plan-start (no false past-due). All edits are held in memory and appended to the exported <code>task_log.csv</code> — the same load/export loop as the map viewer.</div>
+</div>
+<script>
+/*
+ * JamatAgro Farm Calendar — Generation Engine v2
+ * Adds recurring / seasonal / window task types, labour effort, date-range generation,
+ * provisional second anchors, ad-hoc planned activities, and manager re-assignment —
+ * while preserving the v1 guarantees (stable occurrence_index; plan_start_date bound).
+ *
+ * generate({ templates, cycles, taskLog, plots, plotUse, today, rangeStart, rangeEnd })
+ *   -> { today, rangeStart, rangeEnd, occurrences, validation }
+ *
+ * occurrence_index is computed from each task's intrinsic origin (NOT the view range),
+ * so it is stable no matter which window you render — completions never re-key.
+ */
+var JamatCal = (function () {
+  'use strict';
+
+  function parseDate(s){ if(!s) return null; var p=String(s).slice(0,10).split('-'); if(p.length<3) return null; var d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2])); return isNaN(d.getTime())?null:d; }
+  function iso(d){ return d.toISOString().slice(0,10); }
+  function addDays(d,n){ var x=new Date(d.getTime()); x.setUTCDate(x.getUTCDate()+n); return x; }
+  function diffDays(a,b){ return Math.round((a.getTime()-b.getTime())/86400000); }
+  function ymd(y,m,day){ return new Date(Date.UTC(y,m-1,day||1)); }
+  function parseVintageYear(v){ var m=String(v==null?'':v).match(/\d{4}/); return m?+m[0]:null; }
+
+  function csvParse(text){ var rows=[],row=[],field='',i=0,inQ=false,c; text=String(text).replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+    for(i=0;i<text.length;i++){ c=text[i];
+      if(inQ){ if(c==='"'){ if(text[i+1]==='"'){ field+='"'; i++; } else inQ=false; } else field+=c; }
+      else if(c==='"') inQ=true; else if(c===','){ row.push(field); field=''; }
+      else if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=''; } else field+=c; }
+    if(field.length||row.length){ row.push(field); rows.push(row); } if(!rows.length) return [];
+    var head=rows.shift().map(function(h){return h.trim();});
+    return rows.filter(function(r){return r.some(function(x){return x!=='';});})
+      .map(function(r){ var o={}; head.forEach(function(h,j){ o[h]=(r[j]==null?'':r[j]).trim(); }); return o; }); }
+
+  function indexTemplates(t){ var b={}; (t||[]).forEach(function(x){ b[x.template_id+'@'+x.version]=x; }); return b; }
+
+  function inferPhase(tp, age, ov){ if(ov) return ov;
+    for(var k=0;k<tp.phases.length;k++){ var ph=tp.phases[k]; var lo=ph.entry?ph.entry.offset_days:-Infinity; var hi=ph.exit?ph.exit.offset_days:Infinity; if(age>=lo && age<hi) return ph.phase_id; }
+    var last=tp.phases[tp.phases.length-1]; if(last && !last.exit && age>=(last.entry?last.entry.offset_days:0)) return last.phase_id; return null; }
+
+  function effectiveEvents(log){ var m={}; (log||[]).forEach(function(e){ if(e.action==='adhoc_created'||e.action==='assigned') return; var k=e.cycle_id+'|'+e.task_code+'|'+e.occurrence_index; if(!m[k]||String(e.event_ts)>String(m[k].event_ts)) m[k]=e; }); return m; }
+  // assignment is a distinct event so it never overwrites a done/shifted status
+  function assignments(log){ var m={}; (log||[]).forEach(function(e){ if(e.action!=='assigned') return; var k=e.cycle_id+'|'+e.task_code+'|'+e.occurrence_index; if(!m[k]||String(e.event_ts)>String(m[k].event_ts)) m[k]=e.manager||e.adhoc_manager||''; }); return m; }
+
+  function validateCycle(c, byKey, plotSet, plotUse){ var errs=[];
+    if(plotSet && !plotSet.has(String(c.plot_no))) errs.push('plot_no '+c.plot_no+' not found in register/geometry');
+    var tk=(c.template_version && c.template_version.indexOf('@')>=0)?c.template_version:null;
+    if(!tk || !byKey[tk]){ errs.push('template_version "'+c.template_version+'" not found'); }
+    else { var t=byKey[tk];
+      if(c.crop && t.crop_name && c.crop!==t.crop_name) errs.push('crop "'+c.crop+'" != template crop "'+t.crop_name+'"');
+      if(plotUse && plotUse[c.plot_no] && t.maps_to_current_use && plotUse[c.plot_no]!==t.maps_to_current_use)
+        errs.push('plot land-use "'+plotUse[c.plot_no]+'" incompatible with template use "'+t.maps_to_current_use+'"');
+      if(c.anchor_type && t.anchors.indexOf(c.anchor_type)<0) errs.push('anchor_type "'+c.anchor_type+'" not in template anchors');
+    }
+    if(!parseDate(c.anchor_date)) errs.push('anchor_date "'+c.anchor_date+'" invalid');
+    return errs; }
+
+  // resolve primary + sets_anchor (actual) + provisional second anchors
+  function resolveAnchors(cycle, tp, eff){ var a={};
+    a[cycle.anchor_type]={date:parseDate(cycle.anchor_date), status:cycle.anchor_status||'planned'};
+    tp.tasks.forEach(function(t){ if(!t.sets_anchor) return;
+      for(var k in eff){ var e=eff[k]; if(e.cycle_id===cycle.cycle_id && e.task_code===t.task_code && e.action==='done' && e.done_date){ a[t.sets_anchor]={date:parseDate(e.done_date), status:'actual', source:e.entry_id}; } } });
+    // provisional for any declared anchor still unresolved
+    (tp.anchors||[]).forEach(function(an){ if(a[an]) return;
+      var setter=tp.tasks.filter(function(t){return t.sets_anchor===an;})[0];
+      if(setter && a[setter.anchor] && a[setter.anchor].date){ a[an]={date:addDays(a[setter.anchor].date, setter.offset_days||0), status:'provisional'}; } });
+    return a; }
+
+  function labourFor(task, area){ var A=parseFloat(area); if(!isNaN(A) && task.labour_per_ha!=null) return Math.round(A*task.labour_per_ha*10)/10; if(task.labour_days!=null) return task.labour_days; return null; }
+
+  // expand one task to occurrences [{occurrence_index, date, end_date?}] up to rangeEnd.
+  // primaryDate = the cycle's primary-anchor date (used as the base year for seasonal tasks,
+  // which are month-anchored and carry no `anchor` field).
+  function expandTask(task, anchors, primaryDate, rangeEnd){ var out=[], CAP=6000;
+    if(task.type==='seasonal'){ var baseY=primaryDate.getUTCFullYear(); var months=(task.months||[]).slice(); var endY=rangeEnd.getUTCFullYear();
+      for(var Y=baseY; Y<=endY; Y++){ for(var mi=0; mi<months.length; mi++){ var d2=ymd(Y, months[mi], task.day||1); if(d2.getTime()>rangeEnd.getTime()) continue; out.push({occurrence_index:(Y-baseY)*months.length+mi, date:d2}); } }
+      return out; }
+    var a=anchors[task.anchor]; if(!a||!a.date) return out;
+    if(task.type==='offset'){ out.push({occurrence_index:0, date:addDays(a.date, task.offset_days||0)}); }
+    else if(task.type==='window'){ out.push({occurrence_index:0, date:addDays(a.date, task.start_offset_days||0), end_date:addDays(a.date, task.end_offset_days||0)}); }
+    else if(task.type==='recurring'){ var first=addDays(a.date, task.active_from_days||0); var last=(task.active_to_days!=null)?addDays(a.date, task.active_to_days):rangeEnd;
+      var k=0, d=first; while(d.getTime()<=last.getTime() && d.getTime()<=rangeEnd.getTime() && k<CAP){ out.push({occurrence_index:k, date:d}); k++; d=addDays(first, k*(task.interval_days||1)); } }
+    return out; }
+
+  function classify(sched, today){ if(sched.getTime()<today.getTime()) return 'overdue'; if(diffDays(sched,today)<=7) return 'due_soon'; return 'upcoming'; }
+
+  function generate(opts){ opts=opts||{};
+    var today=opts.today?parseDate(opts.today):parseDate(iso(new Date()));
+    var byKey=indexTemplates(opts.templates);
+    var plotSet=opts.plots?new Set(opts.plots.map(String)):null;
+    var plotUse=opts.plotUse||null;
+    var eff=effectiveEvents(opts.taskLog||[]);
+    var asg=assignments(opts.taskLog||[]);
+    var rangeEnd=opts.rangeEnd?parseDate(opts.rangeEnd):addDays(today,420);
+    var rangeStartOpt=opts.rangeStart?parseDate(opts.rangeStart):null;
+    var validation=[], occ=[];
+
+    (opts.cycles||[]).forEach(function(c){
+      var errs=validateCycle(c, byKey, plotSet, plotUse);
+      if(errs.length){ validation.push({cycle_id:c.cycle_id, plot_no:c.plot_no, errors:errs}); return; }
+      if(['planned','active'].indexOf(c.status)<0) return;
+      var t=byKey[c.template_version];
+      var anchors=resolveAnchors(c, t, eff);
+      var primary=anchors[c.anchor_type]; if(!primary||!primary.date) return;
+      var planStart=parseDate(c.plan_start_date)||primary.date;
+      // no-flood lower bound; overview mode (year view) bypasses plan_start but is still
+      // bounded to the requested range, so at most one screen's worth of history appears.
+      var lowBound = opts.ignorePlanStart ? (rangeStartOpt||planStart)
+        : (rangeStartOpt && rangeStartOpt.getTime()>planStart.getTime() ? rangeStartOpt : planStart);
+
+      t.tasks.forEach(function(task){
+        expandTask(task, anchors, primary.date, rangeEnd).forEach(function(o){
+          // no-flood + range filters (index already assigned from intrinsic origin -> stable)
+          if(o.date.getTime()<lowBound.getTime()) return;
+          if(o.date.getTime()>rangeEnd.getTime()) return;
+          // phase gate evaluated at the OCCURRENCE date (handles multi-year perennials)
+          if(task.phase){ var ageAt=diffDays(o.date, primary.date); if(inferPhase(t, ageAt, c.phase_override||'')!==task.phase) return; }
+          var key=c.cycle_id+'|'+task.task_code+'|'+o.occurrence_index;
+          var e=eff[key]; var sched=o.date, status, dd=null, delta=null;
+          var mgr=asg[key]||c.manager||'(unassigned)';
+          if(e && e.action==='skipped'){ status='skipped'; }
+          else if(e && e.action==='done'){ status='done'; dd=parseDate(e.done_date); if(dd) delta=diffDays(dd,o.date); }
+          else { if(e && e.action==='shifted' && e.new_date){ var nd=parseDate(e.new_date); if(nd) sched=nd; } status=classify(sched, today); }
+          occ.push({ cycle_id:c.cycle_id, plot_no:c.plot_no, crop:c.crop, manager:mgr, phase:task.phase||inferPhase(t, diffDays(o.date,primary.date), c.phase_override||''),
+            task_code:task.task_code, label:task.label, category:task.category, activity_detail:task.activity_detail||'', type:task.type,
+            occurrence_index:o.occurrence_index, planned_date:iso(o.date), scheduled_date:iso(sched), end_date:o.end_date?iso(o.end_date):'',
+            window_days:task.window_days||0, inputs:task.inputs||'', labour_days:labourFor(task, c.area_ha), critical:!!task.critical,
+            status:status, done_date:dd?iso(dd):'', delta_days:delta, anchor_status:primary.status, area_ha:c.area_ha||'', adhoc:false });
+        });
+      });
+    });
+
+    // ad-hoc planned activities (rows with action 'adhoc_created')
+    (opts.taskLog||[]).forEach(function(e){ if(e.action!=='adhoc_created') return;
+      var d=parseDate(e.new_date)||parseDate(e.scheduled_date); if(!d) return;
+      if(rangeStartOpt && d.getTime()<rangeStartOpt.getTime()) return; if(d.getTime()>rangeEnd.getTime()) return;
+      var key=(e.cycle_id||'FARM')+'|'+e.entry_id+'|0'; var ov=eff[key]; var status, dd=null, sched=d;
+      if(ov && ov.action==='skipped') status='skipped'; else if(ov && ov.action==='done'){ status='done'; dd=parseDate(ov.done_date); }
+      else { if(ov && ov.action==='shifted' && ov.new_date){ var nd=parseDate(ov.new_date); if(nd) sched=nd; } status=classify(sched, today); }
+      occ.push({ cycle_id:e.cycle_id||'', plot_no:e.adhoc_plot_no||'', crop:'(ad-hoc)', manager:asg[key]||e.adhoc_manager||'(unassigned)',
+        phase:'', task_code:e.entry_id, label:e.adhoc_label||e.notes||'Ad-hoc task', category:e.adhoc_category||'other', activity_detail:'', type:'adhoc',
+        occurrence_index:0, planned_date:iso(d), scheduled_date:iso(sched), end_date:'', window_days:0, inputs:'', labour_days:(e.adhoc_labour_days!=null&&e.adhoc_labour_days!=='')?+e.adhoc_labour_days:null,
+        critical:false, status:status, done_date:dd?iso(dd):'', delta_days:null, anchor_status:'planned', area_ha:'', adhoc:true });
+    });
+
+    occ.sort(function(a,b){ return a.scheduled_date<b.scheduled_date?-1:a.scheduled_date>b.scheduled_date?1:0; });
+    return { today:iso(today), rangeStart:rangeStartOpt?iso(rangeStartOpt):'', rangeEnd:iso(rangeEnd), occurrences:occ, validation:validation };
+  }
+
+  return { parseDate:parseDate, iso:iso, addDays:addDays, diffDays:diffDays, csvParse:csvParse, parseVintageYear:parseVintageYear, inferPhase:inferPhase, generate:generate };
+})();
+if (typeof module!=='undefined' && module.exports) module.exports=JamatCal;
+
+var TEMPLATES_JSON=`{
+  "_file": "JamatAgro_CropTemplates_v2.json",
+  "_spec": "JamatAgro Farm Calendar v2.0 — full lifecycle for oil palm, cassava, tomato. Aligned to Master Plot Register (maps_to_current_use) + Activity Log Detail vocabulary. labour_per_ha = person-days per hectare (manager-review defaults; not payroll).",
+  "templates": [
+    {
+      "template_id": "oil_palm", "crop_name": "Oil palm", "maps_to_current_use": "Oil palm",
+      "version": "2.0", "display_name": "Oil palm (plantation)", "cycle_kind": "perennial",
+      "anchors": ["field_planting"],
+      "default_seasons": { "major": {"anchor":"field_planting","window":["04-01","05-31"]}, "minor": {"anchor":"field_planting","window":["08-15","09-30"]} },
+      "phases": [
+        {"phase_id":"establishment","entry":{"anchor":"field_planting","offset_days":-60},"exit":{"anchor":"field_planting","offset_days":365}},
+        {"phase_id":"immature","entry":{"anchor":"field_planting","offset_days":365},"exit":{"anchor":"field_planting","offset_days":1460}},
+        {"phase_id":"mature","entry":{"anchor":"field_planting","offset_days":1460},"exit":null}
+      ],
+      "tasks": [
+        {"task_code":"land_clear_prep","label":"Land clearing & burning-free prep","category":"infrastructure","activity_detail":"Clearing","type":"offset","anchor":"field_planting","offset_days":-60,"window_days":14,"phase":"establishment","labour_per_ha":8,"inputs":"cutlasses, no burning","critical":true},
+        {"task_code":"lining_pegging","label":"Lining & pegging (9 m triangular, ~143/ha)","category":"infrastructure","activity_detail":"Other","type":"offset","anchor":"field_planting","offset_days":-30,"window_days":10,"phase":"establishment","labour_per_ha":2,"inputs":"pegs, measuring line","critical":false},
+        {"task_code":"hole_digging","label":"Hole digging (60x60x60 cm)","category":"infrastructure","activity_detail":"Other","type":"offset","anchor":"field_planting","offset_days":-14,"window_days":7,"phase":"establishment","labour_per_ha":6,"inputs":"diggers","critical":false},
+        {"task_code":"transplant","label":"Transplant seedlings to field","category":"planting","activity_detail":"Planting","type":"offset","anchor":"field_planting","offset_days":0,"window_days":14,"phase":"establishment","labour_per_ha":4,"inputs":"seedlings ~143/ha","sets_anchor":"field_planting","critical":true},
+        {"task_code":"cover_crop","label":"Cover crop establishment (Pueraria)","category":"planting","activity_detail":"Planting","type":"offset","anchor":"field_planting","offset_days":14,"window_days":14,"phase":"establishment","labour_per_ha":1.5,"inputs":"Pueraria seed","critical":false},
+        {"task_code":"beat_up","label":"Beat-up / replace failed seedlings","category":"planting","activity_detail":"Planting","type":"offset","anchor":"field_planting","offset_days":60,"window_days":21,"phase":"establishment","labour_per_ha":1,"inputs":"reserve seedlings 5-10%","critical":false},
+
+        {"task_code":"ring_weeding_imm","label":"Ring weeding (immature)","category":"weeding","activity_detail":"Weeding","type":"seasonal","months":[4,7,10],"phase":"immature","labour_per_ha":2,"inputs":"manual/selective spray","critical":false},
+        {"task_code":"fert_immature","label":"Fertilizer (immature, onset of rains)","category":"fertilizer","activity_detail":"Fertiliser/Spraying","type":"seasonal","months":[3,9],"phase":"immature","labour_per_ha":1.5,"inputs":"NPK + Mg","critical":false},
+        {"task_code":"ablation","label":"Ablation of early inflorescences","category":"crop_protection","activity_detail":"Pruning","type":"recurring","anchor":"field_planting","interval_days":60,"active_from_days":420,"active_to_days":900,"phase":"immature","labour_per_ha":1.5,"inputs":"chisel","critical":false},
+        {"task_code":"pest_patrol_imm","label":"Pest patrol (immature)","category":"crop_protection","activity_detail":"Other","type":"recurring","anchor":"field_planting","interval_days":30,"active_from_days":365,"active_to_days":1460,"phase":"immature","labour_per_ha":0.5,"inputs":"scout","critical":false},
+
+        {"task_code":"harvest_round","label":"Harvest round (FFB, every ~12 days)","category":"harvest","activity_detail":"Harvest","type":"recurring","anchor":"field_planting","interval_days":12,"active_from_days":1460,"phase":"mature","labour_per_ha":1.5,"inputs":"chisel/pole, barrows","critical":true},
+        {"task_code":"pruning_mature","label":"Pruning (annual)","category":"crop_protection","activity_detail":"Pruning","type":"seasonal","months":[1,2],"phase":"mature","labour_per_ha":2,"inputs":"pruning pole","critical":false},
+        {"task_code":"fert_mature","label":"Fertilizer (mature, split)","category":"fertilizer","activity_detail":"Fertiliser/Spraying","type":"seasonal","months":[3,9],"phase":"mature","labour_per_ha":1.5,"inputs":"NPK + Mg + B","critical":false},
+        {"task_code":"path_maint","label":"Harvest path maintenance","category":"infrastructure","activity_detail":"Other","type":"seasonal","months":[2],"phase":"mature","labour_per_ha":1,"inputs":"cutlass","critical":false}
+      ]
+    },
+
+    {
+      "template_id": "cassava", "crop_name": "Cassava", "maps_to_current_use": "Arable",
+      "version": "1.0", "display_name": "Cassava (long annual)", "cycle_kind": "annual",
+      "anchors": ["field_planting"],
+      "default_seasons": { "major": {"anchor":"field_planting","window":["04-01","06-15"]}, "minor": {"anchor":"field_planting","window":["09-01","10-15"]} },
+      "phases": [ {"phase_id":"crop","entry":{"anchor":"field_planting","offset_days":-30},"exit":null} ],
+      "tasks": [
+        {"task_code":"land_prep_ridge","label":"Land prep / ridging","category":"infrastructure","activity_detail":"Clearing","type":"offset","anchor":"field_planting","offset_days":-14,"window_days":10,"labour_per_ha":5,"inputs":"ridger/hoe","critical":false},
+        {"task_code":"plant_cuttings","label":"Plant stem cuttings","category":"planting","activity_detail":"Planting","type":"offset","anchor":"field_planting","offset_days":0,"window_days":10,"labour_per_ha":4,"inputs":"healthy stems","sets_anchor":"field_planting","critical":true},
+        {"task_code":"weed_1","label":"Weeding round 1 (critical)","category":"weeding","activity_detail":"Weeding","type":"offset","anchor":"field_planting","offset_days":25,"window_days":10,"labour_per_ha":3,"inputs":"manual/pre-emergence","critical":true},
+        {"task_code":"weed_2","label":"Weeding round 2","category":"weeding","activity_detail":"Weeding","type":"offset","anchor":"field_planting","offset_days":56,"window_days":12,"labour_per_ha":3,"inputs":"manual","critical":false},
+        {"task_code":"fert_cassava","label":"Fertilizer (NPK, optional)","category":"fertilizer","activity_detail":"Fertiliser/Spraying","type":"offset","anchor":"field_planting","offset_days":56,"window_days":14,"labour_per_ha":1.5,"inputs":"NPK 15-15-15","critical":false},
+        {"task_code":"weed_3","label":"Weeding round 3","category":"weeding","activity_detail":"Weeding","type":"offset","anchor":"field_planting","offset_days":90,"window_days":14,"labour_per_ha":3,"inputs":"manual","critical":false},
+        {"task_code":"pest_check_cassava","label":"Pest/disease check (mealybug, mosaic)","category":"crop_protection","activity_detail":"Other","type":"recurring","anchor":"field_planting","interval_days":30,"active_from_days":30,"active_to_days":240,"labour_per_ha":0.5,"inputs":"scout","critical":false},
+        {"task_code":"harvest_window","label":"Harvest window (month 9-15)","category":"harvest","activity_detail":"Harvest","type":"window","anchor":"field_planting","start_offset_days":270,"end_offset_days":450,"labour_per_ha":6,"inputs":"lifting, transport","critical":false},
+        {"task_code":"stem_select","label":"Stem cutting selection for next season","category":"planting","activity_detail":"Other","type":"offset","anchor":"field_planting","offset_days":270,"window_days":30,"labour_per_ha":1,"inputs":"select & store stems","critical":false}
+      ]
+    },
+
+    {
+      "template_id": "tomato", "crop_name": "Tomato", "maps_to_current_use": "Arable",
+      "version": "1.0", "display_name": "Tomato (open field)", "cycle_kind": "annual",
+      "anchors": ["nursery_sowing","field_transplant"],
+      "default_seasons": { "major": {"anchor":"nursery_sowing","window":["03-01","04-15"]}, "dry": {"anchor":"nursery_sowing","window":["10-01","11-15"],"requires_irrigation":true} },
+      "phases": [ {"phase_id":"crop","entry":{"anchor":"nursery_sowing","offset_days":0},"exit":null} ],
+      "tasks": [
+        {"task_code":"nursery_sow","label":"Nursery sowing","category":"planting","activity_detail":"Planting","type":"offset","anchor":"nursery_sowing","offset_days":0,"window_days":5,"labour_per_ha":3,"inputs":"seed trays, media","critical":true},
+        {"task_code":"nursery_care","label":"Nursery care (watering, damping-off watch)","category":"crop_protection","activity_detail":"Other","type":"recurring","anchor":"nursery_sowing","interval_days":3,"active_from_days":3,"active_to_days":26,"labour_per_ha":0.4,"inputs":"water, fungicide","critical":false},
+        {"task_code":"land_prep_beds","label":"Land prep + beds","category":"infrastructure","activity_detail":"Clearing","type":"offset","anchor":"nursery_sowing","offset_days":21,"window_days":7,"labour_per_ha":6,"inputs":"beds, manure","critical":false},
+        {"task_code":"transplant_tom","label":"Transplant to field","category":"planting","activity_detail":"Planting","type":"offset","anchor":"nursery_sowing","offset_days":28,"window_days":7,"labour_per_ha":5,"inputs":"seedlings","sets_anchor":"field_transplant","critical":true},
+        {"task_code":"staking","label":"Staking","category":"infrastructure","activity_detail":"Other","type":"offset","anchor":"field_transplant","offset_days":14,"window_days":7,"labour_per_ha":4,"inputs":"stakes, twine","critical":false},
+        {"task_code":"fert_split1","label":"Fertilizer split 1","category":"fertilizer","activity_detail":"Fertiliser/Spraying","type":"offset","anchor":"field_transplant","offset_days":10,"window_days":5,"labour_per_ha":1,"inputs":"NPK","critical":false},
+        {"task_code":"fert_split2","label":"Fertilizer split 2","category":"fertilizer","activity_detail":"Fertiliser/Spraying","type":"offset","anchor":"field_transplant","offset_days":30,"window_days":5,"labour_per_ha":1,"inputs":"NPK","critical":false},
+        {"task_code":"fert_split3","label":"Fertilizer split 3","category":"fertilizer","activity_detail":"Fertiliser/Spraying","type":"offset","anchor":"field_transplant","offset_days":50,"window_days":5,"labour_per_ha":1,"inputs":"NPK/K","critical":false},
+        {"task_code":"scout_tuta","label":"Pest & disease scouting (Tuta absoluta)","category":"crop_protection","activity_detail":"Other","type":"recurring","anchor":"field_transplant","interval_days":7,"active_from_days":7,"active_to_days":90,"labour_per_ha":0.5,"inputs":"pheromone traps, scout","critical":true},
+        {"task_code":"first_harvest","label":"First harvest","category":"harvest","activity_detail":"Harvest","type":"offset","anchor":"field_transplant","offset_days":60,"window_days":5,"labour_per_ha":3,"inputs":"crates","critical":false},
+        {"task_code":"harvest_picks","label":"Harvest picks (every 3-4 days)","category":"harvest","activity_detail":"Harvest","type":"recurring","anchor":"field_transplant","interval_days":3,"active_from_days":60,"active_to_days":100,"labour_per_ha":2,"inputs":"crates, transport","critical":false}
+      ]
+    }
+  ]
+}
+`;
+var CYCLES_CSV=`cycle_id,plot_no,crop,template_version,anchor_type,anchor_date,anchor_status,plan_start_date,phase_override,season,vintage_year,area_ha,manager,status,notes
+CYC-2026-014,35,Oil palm,oil_palm@2.0,field_planting,2026-09-01,planned,2026-06-01,,minor,2026,2.4,Mr Hassan,active,2026 expansion establishment (plot 35)
+CYC-2026-015,36,Oil palm,oil_palm@2.0,field_planting,2026-09-15,planned,2026-06-01,,minor,2026,3.1,Mr Hassan,active,2026 expansion establishment (plot 36)
+CYC-2026-016,37,Oil palm,oil_palm@2.0,field_planting,2026-08-20,planned,2026-06-01,,minor,2026,1.8,Dr Iginla,active,2026 expansion establishment (plot 37)
+CYC-ONB-001,1,Oil palm,oil_palm@2.0,field_planting,2018-04-15,actual,2026-07-26,,perennial,2018,3.1,Dr Iginla,active,Mature block - harvest/pruning/fertilizer
+CYC-ONB-057,57,Oil palm,oil_palm@2.0,field_planting,2024-05-01,actual,2026-07-26,,perennial,2024,2.0,Dr Iginla,active,Immature block yr 2 - weeding/ablation/fert
+CYC-CAS-045,45,Cassava,cassava@1.0,field_planting,2026-04-20,actual,2026-04-01,,major,,2.0,Dr Iginla,active,Cassava major season (arable plot 45)
+CYC-TOM-046,46,Tomato,tomato@1.0,nursery_sowing,2026-03-10,actual,2026-03-10,,major,,0.5,Mr Hassan,active,Tomato major season (arable plot 46)
+CYC-TOM-052,52,Tomato,tomato@1.0,nursery_sowing,2026-10-15,planned,2026-10-15,,dry,,0.4,Mr Hassan,active,Tomato dry season irrigated (arable plot 52)
+CYC-2026-099,999,Oil palm,oil_palm@9.9,field_planting,2026-09-01,planned,2026-06-01,,minor,2026,1.5,Mr Hassan,active,BAD ROW - template @9.9 missing AND plot 999 unknown
+`;
+var TASKLOG_CSV=`entry_id,event_ts,cycle_id,task_code,occurrence_index,scheduled_date,action,new_date,done_date,anchor_name,by,source_entry_id,adhoc_plot_no,adhoc_label,adhoc_category,adhoc_manager,adhoc_labour_days,notes
+T-000001,2026-07-20T09:00:00,CYC-2026-014,land_clear_prep,0,2026-07-03,done,,2026-07-19,,Musa,,,,,,,Cleared - 16 days late (rain delay)
+T-AD001,2026-07-24T16:00:00,,ADHOC,0,,adhoc_created,2026-08-05,,,Dr Iginla,,45,Emergency mealybug spot-spray,crop_protection,Dr Iginla,2,Ad-hoc planned response after scouting
+`;
+/* ===== JamatAgro Planning Views app ===== */
+var TEMPLATES=JSON.parse(TEMPLATES_JSON).templates;
+var baseCycles=JamatCal.csvParse(CYCLES_CSV);
+var baseLog=JamatCal.csvParse(TASKLOG_CSV);
+var sessionLog=[];
+var PLOTS=[];for(var _p=1;_p<=98;_p++)PLOTS.push(_p);
+var PLOTUSE={1:"Oil palm",35:"Oil palm",36:"Oil palm",37:"Oil palm",57:"Oil palm",45:"Arable",46:"Arable",52:"Arable"};
+var LOGCOLS=["entry_id","event_ts","cycle_id","task_code","occurrence_index","scheduled_date","action","new_date","done_date","anchor_name","by","source_entry_id","adhoc_plot_no","adhoc_label","adhoc_category","adhoc_manager","adhoc_labour_days","notes"];
+var MANAGERS=["Dr Iginla","Mr Hassan","(unassigned)"];
+var MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+var CATS=["planting","weeding","fertilizer","crop_protection","harvest","infrastructure","other"];
+var CATLAB={planting:"Planting",weeding:"Weeding",fertilizer:"Fertilizer",crop_protection:"Crop protection",harvest:"Harvest",infrastructure:"Infrastructure",other:"Other"};
+var CATCOL={planting:"#2e7d32",weeding:"#7cb342",fertilizer:"#00838f",crop_protection:"#8e24aa",harvest:"#ef6c00",infrastructure:"#6d4c41",other:"#90a4ae"};
+var MGRCOL={"Dr Iginla":"#1f7a4d","Mr Hassan":"#00695c","(unassigned)":"#9e9e9e"};
+var activeTab="year";
+
+/* date helpers */
+var P=JamatCal.parseDate, ISO=JamatCal.iso, AD=JamatCal.addDays, DD=JamatCal.diffDays;
+function el(id){return document.getElementById(id);}
+function fmt(iso){var p=iso.split("-");return (+p[2])+" "+MONTHS[+p[1]-1];}
+function monthStart(d){return new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),1));}
+function monthEnd(d){return new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0));}
+function addMonths(d,n){return new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+n,1));}
+function monthName(d){return MONTHS[d.getUTCMonth()]+" "+d.getUTCFullYear();}
+function mondayOf(d){var x=new Date(d.getTime());var g=(x.getUTCDay()+6)%7;return AD(x,-g);}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function hexA(hex,op){var n=parseInt(hex.slice(1),16);return "rgba("+((n>>16)&255)+","+((n>>8)&255)+","+(n&255)+","+op+")";}
+function mgrColor(m){return MGRCOL[m]||"#607d8b";}
+
+function gen(extra){var o={templates:TEMPLATES,cycles:baseCycles,taskLog:baseLog.concat(sessionLog),plots:PLOTS,plotUse:PLOTUSE,today:el("asof").value};for(var k in extra)o[k]=extra[k];return JamatCal.generate(o);}
+function applyFilters(occ){var m=el("mgr").value,c=el("crop").value;return occ.filter(function(o){if(m&&o.manager!==m)return false;if(c&&o.crop!==c)return false;return true;});}
+
+function renderHealth(res){var h=el("health");if(res.validation.length){h.style.display="";h.innerHTML='<h3>Data health — '+res.validation.length+' cycle(s) excluded</h3>'+res.validation.map(function(v){return '<div class="row">✗ '+v.cycle_id+' (plot '+v.plot_no+'): '+v.errors.join(' ; ')+'</div>';}).join('');}else{h.style.display="none";}}
+
+/* ---------- shared task row + actions ---------- */
+function taskRow(o){
+  var stl=o.status==="done"?("done"+(o.delta_days!=null?" "+(o.delta_days>0?"+"+o.delta_days:o.delta_days)+"d":"")):o.status.replace("_"," ");
+  var pd=o.labour_days!=null?o.labour_days+" pd":"";
+  var acts=o.status==="done"?"":(
+    '<button data-a="done" '+dataAttrs(o)+'>✓</button>'+
+    '<button data-a="shift" '+dataAttrs(o)+'>+7d</button>'+
+    '<button data-a="assign" '+dataAttrs(o)+'>@</button>'+
+    '<button data-a="skip" '+dataAttrs(o)+'>skip</button>');
+  return '<div class="task '+(o.status==="done"?"done":"")+'">'+
+    '<div class="d">'+fmt(o.scheduled_date)+'</div>'+
+    '<div class="t"><span class="cbadge" style="background:'+(CATCOL[o.category]||"#90a4ae")+'"></span>'+(o.critical?'<span class="crit">‼ </span>':'')+esc(o.label)+
+      '<small>'+(o.adhoc?"ad-hoc · ":("plot "+o.plot_no+" · "+o.crop+" · "))+(o.inputs?esc(o.inputs):o.category)+'</small></div>'+
+    '<div class="pd">'+pd+'</div>'+
+    '<div><span class="st '+o.status+'">'+stl+'</span></div>'+
+    '<div class="act">'+acts+'</div></div>';
+}
+function dataAttrs(o){return 'data-c="'+esc(o.cycle_id||"")+'" data-t="'+esc(o.task_code)+'" data-i="'+o.occurrence_index+'" data-s="'+o.scheduled_date+'" data-adhoc="'+(o.adhoc?1:0)+'"';}
+function wireActions(root){root.querySelectorAll(".act button").forEach(function(b){b.addEventListener("click",onAction);});}
+function onAction(e){
+  var b=e.currentTarget,a=b.dataset.a;
+  var ev={entry_id:"S-"+Date.now()+"-"+Math.floor(Math.random()*9999),event_ts:new Date().toISOString().slice(0,19),
+    cycle_id:b.dataset.c,task_code:b.dataset.t,occurrence_index:b.dataset.i,scheduled_date:b.dataset.s,
+    action:"",new_date:"",done_date:"",anchor_name:"",by:"planner",source_entry_id:"",
+    adhoc_plot_no:"",adhoc_label:"",adhoc_category:"",adhoc_manager:"",adhoc_labour_days:"",notes:"via planner"};
+  if(a==="done"){ev.action="done";ev.done_date=el("asof").value;}
+  else if(a==="shift"){ev.action="shifted";ev.new_date=ISO(AD(P(b.dataset.s),7));}
+  else if(a==="skip"){ev.action="skipped";}
+  else if(a==="assign"){var m=prompt("Assign to which manager?\nDr Iginla / Mr Hassan / (unassigned)","Dr Iginla");if(!m)return;ev.action="assigned";ev.manager=m.trim();ev.adhoc_manager=m.trim();}
+  sessionLog.push(ev);render();
+}
+
+/* ---------- YEAR ---------- */
+function windowOverlapsMonth(o,mIdx,year){if(!o.end_date)return +o.scheduled_date.slice(5,7)===mIdx+1&&+o.scheduled_date.slice(0,4)===year;
+  var s=P(o.scheduled_date),e=P(o.end_date),first=new Date(Date.UTC(year,mIdx,1)),last=new Date(Date.UTC(year,mIdx+1,0));return s.getTime()<=last.getTime()&&e.getTime()>=first.getTime();}
+function renderYear(){
+  var year=+el("year").value;
+  var res=gen({rangeStart:year+"-01-01",rangeEnd:year+"-12-31",ignorePlanStart:true});
+  renderHealth(res);
+  var occ=applyFilters(res.occurrences);
+  var crops=["Oil palm","Cassava","Tomato"].filter(function(c){return occ.some(function(o){return o.crop===c;});});
+  var html='<h2 class="vh">Seasonal overview '+year+' <span style="font-weight:400;color:var(--muted);font-size:12px">— numbers = person-days that month · hover a cell for tasks</span></h2>';
+  html+='<div class="note">Rain seasons: <b>major</b> Mar–Jul · <b>minor</b> Aug–Nov. Overview mode shows the full pattern for every active block (ignores plan-start).</div>';
+  if(!crops.length)html+='<div class="empty">No activity for the selected filters in '+year+'.</div>';
+  crops.forEach(function(crop){
+    var co=occ.filter(function(o){return o.crop===crop;});
+    html+='<div class="cropblock"><h3>'+crop+'</h3><table class="ymatrix"><thead><tr><th>Activity</th>';
+    for(var m=0;m<12;m++){var rc=(m>=2&&m<=6)?"rain-major":((m>=7&&m<=10)?"rain-minor":"");html+='<th class="'+rc+'">'+MONTHS[m]+'</th>';}
+    html+='</tr></thead><tbody>';
+    CATS.forEach(function(cat){
+      var cc=co.filter(function(o){return o.category===cat;});if(!cc.length)return;
+      html+='<tr><td class="catcell" style="border-left:4px solid '+CATCOL[cat]+'">'+CATLAB[cat]+'</td>';
+      for(var m=0;m<12;m++){
+        var inM=cc.filter(function(o){return o.type==="window"?windowOverlapsMonth(o,m,year):(+o.scheduled_date.slice(5,7)===m+1);});
+        var pd=inM.reduce(function(s,o){return s+(o.labour_days||0);},0);
+        var op=inM.length?Math.min(0.9,0.2+inM.length*0.13):0;
+        var title=inM.length?esc(inM.slice(0,8).map(function(o){return fmt(o.scheduled_date)+" "+o.label;}).join(" | ")):"";
+        html+='<td class="'+(inM.length?"on":"")+'" title="'+title+'" style="'+(inM.length?"background:"+hexA(CATCOL[cat],op):"")+'">'+(inM.length?(pd?Math.round(pd):"•"):"")+'</td>';
+      }
+      html+='</tr>';
+    });
+    html+='</tbody></table></div>';
+  });
+  el("view").innerHTML=html;
+}
+
+/* ---------- MONTH ---------- */
+function weekBuckets(occ,start,end){
+  var weeks=[],cur=mondayOf(start);
+  while(cur.getTime()<=end.getTime()){var ws=ISO(cur);weeks.push({start:ws,byMgr:{},total:0});cur=AD(cur,7);}
+  occ.forEach(function(o){if(o.labour_days==null)return;var wm=ISO(mondayOf(P(o.scheduled_date)));var wk=weeks.filter(function(w){return w.start===wm;})[0];if(!wk)return;wk.byMgr[o.manager]=(wk.byMgr[o.manager]||0)+o.labour_days;wk.total+=o.labour_days;});
+  return weeks;
+}
+function renderMonth(){
+  var asof=P(el("asof").value),m0=monthStart(asof),m1=addMonths(asof,1),end=monthEnd(m1);
+  var res=gen({rangeStart:ISO(m0),rangeEnd:ISO(end)});renderHealth(res);
+  var occ=applyFilters(res.occurrences).filter(function(o){return o.status!=="skipped";});
+  var months=[m0,m1];
+  var html='<h2 class="vh">Manpower planner — '+monthName(m0)+' & '+monthName(m1)+'</h2>';
+  // manager totals per month
+  html+='<div class="panel"><table class="mtable"><thead><tr><th>Manager</th><th>'+monthName(m0)+' (pd)</th><th>tasks</th><th>'+monthName(m1)+' (pd)</th><th>tasks</th></tr></thead><tbody>';
+  var mgrs=MANAGERS.filter(function(m){return occ.some(function(o){return o.manager===m;});});
+  mgrs.forEach(function(m){
+    var r="";var cells=months.map(function(mm){var mo=occ.filter(function(o){return o.manager===m&&o.scheduled_date.slice(0,7)===ISO(mm).slice(0,7);});var pd=mo.reduce(function(s,o){return s+(o.labour_days||0);},0);return{pd:Math.round(pd*10)/10,n:mo.length};});
+    html+='<tr><td>'+m+'</td><td>'+cells[0].pd+'</td><td>'+cells[0].n+'</td><td>'+cells[1].pd+'</td><td>'+cells[1].n+'</td></tr>';
+  });
+  html+='</tbody></table></div>';
+  // weekly workload bars
+  var weeks=weekBuckets(occ,m0,end);var maxw=Math.max(1,Math.max.apply(null,weeks.map(function(w){return w.total;})));
+  html+='<div class="panel"><h2 class="vh">Weekly workload (person-days) — watch for peaks</h2>';
+  weeks.forEach(function(w){
+    var segs="";mgrs.forEach(function(m){var v=w.byMgr[m]||0;if(v)segs+='<div class="seg" title="'+m+': '+Math.round(v*10)/10+' pd" style="width:'+(v/maxw*100)+'%;background:'+mgrColor(m)+'"></div>';});
+    html+='<div class="barrow"><span class="lab">wk '+fmt(w.start)+'</span><span class="bar">'+segs+'</span><span class="val">'+Math.round(w.total)+'</span></div>';
+  });
+  html+='<div class="note">'+mgrs.map(function(m){return '<span class="cbadge" style="background:'+mgrColor(m)+'"></span>'+m;}).join(' &nbsp; ')+'</div></div>';
+  // task list grouped by month -> manager -> plot
+  months.forEach(function(mm){
+    var mo=occ.filter(function(o){return o.scheduled_date.slice(0,7)===ISO(mm).slice(0,7);});
+    html+='<div class="grp">'+monthName(mm)+' · '+mo.length+' task(s) · '+Math.round(mo.reduce(function(s,o){return s+(o.labour_days||0);},0))+' pd</div>';
+    if(!mo.length){html+='<div class="empty">No tasks.</div>';return;}
+    mgrs.forEach(function(m){var mm2=mo.filter(function(o){return o.manager===m;});if(!mm2.length)return;html+='<div class="subgrp">'+m+'</div>';mm2.forEach(function(o){html+=taskRow(o);});});
+  });
+  el("view").innerHTML=html;wireActions(el("view"));
+}
+
+/* ---------- WEEK ---------- */
+function renderWeek(){
+  var asof=P(el("asof").value),thisMon=mondayOf(asof);
+  var prevS=AD(thisMon,-7),prevE=AD(thisMon,-1),nextS=thisMon,nextE=AD(thisMon,6);
+  var res=gen({rangeStart:ISO(prevS),rangeEnd:ISO(nextE)});renderHealth(res);
+  var occ=applyFilters(res.occurrences);
+  function inRange(o,a,b){return o.scheduled_date>=ISO(a)&&o.scheduled_date<=ISO(b);}
+  var prev=occ.filter(function(o){return inRange(o,prevS,prevE)&&o.status!=="skipped";});
+  var next=occ.filter(function(o){return inRange(o,nextS,nextE)&&o.status!=="skipped";});
+  var done=prev.filter(function(o){return o.status==="done";}).length;
+  var over=prev.filter(function(o){return o.status==="overdue";}).length;
+  var pct=prev.length?Math.round(done/prev.length*100):0;
+  var pdNext={};next.forEach(function(o){if(o.labour_days!=null)pdNext[o.manager]=(pdNext[o.manager]||0)+o.labour_days;});
+  var html='<div class="twocol">';
+  // review
+  html+='<div class="panel"><h2 class="vh">◀ Review — week of '+fmt(ISO(prevS))+'</h2>';
+  html+='<div class="statline"><div><b>'+prev.length+'</b> planned</div><div><span class="pill green">'+done+' done</span></div><div><span class="pill red">'+over+' missed</span></div><div><b>'+pct+'%</b> complete</div></div>';
+  if(!prev.length)html+='<div class="empty">Nothing was scheduled last week.</div>';
+  prev.sort(function(a,b){return a.scheduled_date<b.scheduled_date?-1:1;}).forEach(function(o){html+=taskRow(o);});
+  html+='</div>';
+  // plan
+  html+='<div class="panel"><h2 class="vh">▶ Plan — week of '+fmt(ISO(nextS))+'</h2>';
+  var pdline=Object.keys(pdNext).map(function(m){return m+': '+Math.round(pdNext[m]*10)/10+' pd';}).join(' · ');
+  html+='<div class="statline"><div><b>'+next.length+'</b> tasks</div><div>'+(pdline||'—')+'</div></div>';
+  if(!next.length)html+='<div class="empty">Nothing scheduled next week.</div>';
+  next.sort(function(a,b){return a.scheduled_date<b.scheduled_date?-1:1;}).forEach(function(o){html+=taskRow(o);});
+  html+='</div></div>';
+  el("view").innerHTML=html;wireActions(el("view"));
+}
+
+/* ---------- dispatch + controls ---------- */
+function render(){el("yearwrap").style.display=activeTab==="year"?"":"none";if(activeTab==="year")renderYear();else if(activeTab==="month")renderMonth();else renderWeek();}
+
+function initControls(){
+  // year options
+  var ys=el("year");[2026,2027,2028].forEach(function(y){var o=document.createElement("option");o.value=y;o.textContent=y;ys.appendChild(o);});ys.value=2026;
+  // manager dropdowns
+  var mg=el("mgr"),afm=el("af_mgr");MANAGERS.forEach(function(m){var o=document.createElement("option");o.value=m;o.textContent=m;mg.appendChild(o);var o2=o.cloneNode(true);afm.appendChild(o2);});
+  el("af_date").value=el("asof").value;
+  document.querySelectorAll(".tab").forEach(function(t){t.addEventListener("click",function(){document.querySelectorAll(".tab").forEach(function(x){x.classList.remove("active");});t.classList.add("active");activeTab=t.dataset.tab;render();});});
+  ["asof","mgr","crop","year"].forEach(function(id){el(id).addEventListener("change",render);});
+  el("addbtn").addEventListener("click",function(){var f=el("addform");f.style.display=f.style.display==="none"?"flex":"none";el("af_date").value=el("asof").value;});
+  el("af_cancel").addEventListener("click",function(){el("addform").style.display="none";});
+  el("af_save").addEventListener("click",function(){
+    var plot=el("af_plot").value,label=el("af_label").value,date=el("af_date").value;
+    if(!label||!date){alert("Need at least an activity label and date.");return;}
+    sessionLog.push({entry_id:"AD-"+Date.now(),event_ts:new Date().toISOString().slice(0,19),cycle_id:"",task_code:"ADHOC",occurrence_index:"0",scheduled_date:"",action:"adhoc_created",new_date:date,done_date:"",anchor_name:"",by:"planner",source_entry_id:"",adhoc_plot_no:plot,adhoc_label:label,adhoc_category:el("af_cat").value,adhoc_manager:el("af_mgr").value,adhoc_labour_days:el("af_lab").value,notes:"ad-hoc via planner"});
+    el("af_label").value="";el("af_plot").value="";el("af_lab").value="";el("addform").style.display="none";render();
+  });
+  el("exportbtn").addEventListener("click",function(){var rows=baseLog.concat(sessionLog);var head=LOGCOLS.join(",");var body=rows.map(function(r){return LOGCOLS.map(function(c){var v=(r[c]==null?"":String(r[c]));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(",");}).join("\n");var blob=new Blob([head+"\n"+body+"\n"],{type:"text/csv"});var u=URL.createObjectURL(blob);var a=document.createElement("a");a.href=u;a.download="JamatAgro_TaskLog_v2.csv";a.click();});
+  el("resetbtn").addEventListener("click",function(){sessionLog=[];render();});
+}
+initControls();render();
+</script></body></html>
