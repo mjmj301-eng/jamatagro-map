@@ -3470,7 +3470,7 @@ function el(id){return document.getElementById(id);}
 /* parse register */
 function csv(t){t=t.replace(/\r/g,"");var L=t.split("\n").filter(function(x){return x.trim();});var H=L.shift().split(",").map(function(s){return s.trim();});return L.map(function(l){var c=[],cur="",q=false;for(var i=0;i<l.length;i++){var ch=l[i];if(q){if(ch==='"'){if(l[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=ch;}else if(ch==='"')q=true;else if(ch===","){c.push(cur);cur="";}else cur+=ch;}c.push(cur);var o={};H.forEach(function(h,j){o[h]=(c[j]||"").trim();});return o;});}
 var ATTR={}; csv(REG_CSV).forEach(function(r){var p=parseInt(r.plot_no);if(!isNaN(p))ATTR[p]=r;});
-var MANAGERS=(function(){var s={};Object.values(ATTR).forEach(function(a){if(a.manager)s[a.manager]=1;});["Dr Iginla","Mr Hassan"].forEach(function(m){s[m]=1;});return Object.keys(s);})();
+var MANAGERS=(function(){var s={};Object.values(ATTR).forEach(function(a){if(a.manager)s[a.manager]=1;});["Dr. Iginla","Ruhullah","Jamiu","Hon. Gafar"].forEach(function(m){s[m]=1;});return Object.keys(s);})();
 
 /* plan state */
 var PLAN={}; try{PLAN=JSON.parse(localStorage.getItem(LSKEY)||"{}");}catch(e){PLAN={};}
