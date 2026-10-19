@@ -180,6 +180,7 @@
     <label class="chk" style="flex-direction:row;align-items:center;gap:6px;text-transform:none"><input type="checkbox" id="critonly"> Critical only</label>
     <button class="btn sec" id="addbtn">＋ Add activity</button>
     <button class="btn sec" id="printbtn">Print</button>
+    <button class="btn" id="syncbtn" style="display:none">⇧ Sync to sheet</button>
     <button class="btn sec" id="exportbtn">Export task_log</button>
     <button class="btn danger" id="resetbtn">Clear unsynced</button>
   </div>
@@ -1078,7 +1079,9 @@ var baseLog=JamatCal.csvParse(TASKLOG_CSV);
 var ACTIVITY=(typeof ACTIVITY_CSV!=="undefined"&&ACTIVITY_CSV)?JamatCal.csvParse(ACTIVITY_CSV):[];
 var WORKFORCE={};JamatCal.csvParse(WORKFORCE_CSV).forEach(function(r){WORKFORCE[r.manager]={crew:+r.crew_size||0,days:+r.work_days_per_week||6};});
 var LSKEY="jamat_sessionLog_v2";
+var SYNCKEY="jamat_synced_v1";
 var sessionLog=[];
+var SYNCED=new Set();
 var PLOTS=[];for(var _p=1;_p<=98;_p++)PLOTS.push(_p);
 var PLOTUSE={1:"Oil palm",35:"Oil palm",36:"Oil palm",37:"Oil palm",57:"Oil palm",45:"Arable",46:"Arable",52:"Arable"};
 var LOGCOLS=["entry_id","event_ts","cycle_id","task_code","occurrence_index","scheduled_date","action","new_date","done_date","anchor_name","by","source_entry_id","manager","adhoc_plot_no","adhoc_label","adhoc_category","adhoc_manager","adhoc_labour_days","crew_size","qty","qty_unit","note","notes"];
@@ -1107,9 +1110,23 @@ function mgrColor(m){return MGRCOL[m]||"#4e7d63";}
 function keyOf(o){return(o.cycle_id||"")+"|"+o.task_code+"|"+o.occurrence_index;}
 function safeId(k){return"df_"+k.replace(/[^a-z0-9]/gi,"_");}
 
-function loadSession(){try{var s=localStorage.getItem(LSKEY);sessionLog=s?JSON.parse(s):[];}catch(e){sessionLog=[];}}
+function loadSession(){try{var s=localStorage.getItem(LSKEY);sessionLog=s?JSON.parse(s):[];}catch(e){sessionLog=[];}try{var y=localStorage.getItem(SYNCKEY);SYNCED=new Set(y?JSON.parse(y):[]);}catch(e){SYNCED=new Set();}}
 function saveSession(){try{localStorage.setItem(LSKEY,JSON.stringify(sessionLog));}catch(e){}updateBadge();}
-function updateBadge(){var b=el("synced");if(sessionLog.length){b.textContent=sessionLog.length+" unsynced";b.className="badge dirty";}else{b.textContent="saved";b.className="badge";}}
+function saveSynced(){try{localStorage.setItem(SYNCKEY,JSON.stringify([].concat(Array.from(SYNCED))));}catch(e){}}
+function syncUrl(){return (window.JAMAT_SRC||{}).SYNC_URL||"";}
+function unsyncedEvents(){return sessionLog.filter(function(e){return !SYNCED.has(e.entry_id);});}
+function setLive(msg){var n=el("livenote");if(n)n.textContent=msg;}
+function updateBadge(){var b=el("synced");var url=syncUrl();var n=url?unsyncedEvents().length:sessionLog.length;
+  if(n){b.textContent=n+(url?" to sync":" unsynced");b.className="badge dirty";}else{b.textContent=url?"synced ✓":"saved";b.className="badge";}}
+function syncToSheet(){
+  var url=syncUrl();if(!url){alert("No sync URL set (SYNC_URL in the shared config). Using Export instead.");return;}
+  var ev=unsyncedEvents();if(!ev.length){setLive("Nothing new to sync.");return;}
+  var payload={events:ev};var sec=(window.JAMAT_SRC||{}).SYNC_SECRET;if(sec)payload.secret=sec;
+  setLive("Syncing "+ev.length+" change(s) to the sheet…");
+  fetch(url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)})
+    .then(function(){ev.forEach(function(e){SYNCED.add(e.entry_id);});saveSynced();updateBadge();setLive("Sent "+ev.length+" change(s) to the Task-log sheet. Safe to reload to confirm — the sheet ignores duplicates.");})
+    .catch(function(){setLive("Sync failed (offline?). Your changes are still saved on this device — press Sync again when online.");});
+}
 
 function gen(extra){var o={templates:TEMPLATES,cycles:baseCycles,taskLog:baseLog.concat(sessionLog),plots:PLOTS,plotUse:PLOTUSE,today:el("asof").value};for(var k in extra)o[k]=extra[k];return JamatCal.generate(o);}
 function applyFilters(occ){var m=el("mgr").value,c=el("crop").value,pl=el("plot").value,cat=el("cat").value,crit=el("critonly").checked,st=el("statusf").value;
@@ -1133,15 +1150,18 @@ function normActivityRows(rows){return rows.map(function(r){var o={};for(var k i
   var isInc=sev!==""||["fire","flood","pest","disease","theft"].indexOf(String(detail).toLowerCase())>=0||/incident/i.test(type);
   return {plot_no:pick("plot_no","plot number","plot"),type:isInc?"Incident":"Work",detail:detail,date:pick("date")||pick("timestamp","zeitstempel"),by:pick("your name","by","name")};
 }).filter(function(x){return x.plot_no;});}
-function fetchText(u){return fetch(u,{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.text();});}
+function cbust(u){return u+(u.indexOf("?")>=0?"&":"?")+"cb="+Date.now();}
+function fetchText(u){return fetch(cbust(u),{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.text();});}
 function rebuildCropOptions(){var cr=el("crop");var cur=cr.value;cr.innerHTML='<option value="">All crops</option>';TEMPLATES.forEach(function(t){var o=document.createElement("option");o.value=t.crop_name;o.textContent=t.crop_name;cr.appendChild(o);});cr.value=cur;}
 function loadLive(){
   var S=window.JAMAT_SRC||{};var jobs=[];var used=[];
   if(S.CROP_CYCLES_URL)jobs.push(fetchText(S.CROP_CYCLES_URL).then(function(t){var rows=JamatCal.csvParse(t).filter(function(x){return x.cycle_id;});if(rows.length){baseCycles=rows;used.push("cycles");}}).catch(function(){}));
-  if(S.TASK_LOG_URL)jobs.push(fetchText(S.TASK_LOG_URL).then(function(t){var rows=JamatCal.csvParse(t).filter(function(x){return x.entry_id;});baseLog=rows;used.push("task log");}).catch(function(){}));
+  if(S.TASK_LOG_URL)jobs.push(fetchText(S.TASK_LOG_URL).then(function(t){var rows=JamatCal.csvParse(t).filter(function(x){return x.entry_id;});baseLog=rows;used.push("task log");
+    var ids={};rows.forEach(function(r){ids[r.entry_id]=1;});var before=sessionLog.length;sessionLog=sessionLog.filter(function(e){return !ids[e.entry_id];});if(sessionLog.length!==before){saveSession();}
+  }).catch(function(){}));
   if(S.ACTIVITY_CSV_URL)jobs.push(fetchText(S.ACTIVITY_CSV_URL).then(function(t){var rows=normActivityRows(JamatCal.csvParse(t));if(rows.length){ACTIVITY=rows;used.push("activity");}}).catch(function(){}));
   if(S.REGISTER_CSV_URL)jobs.push(fetchText(S.REGISTER_CSV_URL).then(function(t){var rows=JamatCal.csvParse(t);var pu={},pl=[];rows.forEach(function(r){var n=parseInt(r.plot_no);if(!isNaN(n)){pl.push(n);if(r.current_use)pu[n]=r.current_use;}});if(pl.length){PLOTUSE=pu;PLOTS=pl;used.push("register");}}).catch(function(){}));
-  jobs.push(fetch((S.CROP_TEMPLATES_FILE||"JamatAgro_CropTemplates_v3.json"),{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(j){TEMPLATES=(j&&j.templates)||j;used.push("templates");}).catch(function(){}));
+  jobs.push(fetch(cbust(S.CROP_TEMPLATES_FILE||"JamatAgro_CropTemplates_v3.json"),{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(j){TEMPLATES=(j&&j.templates)||j;used.push("templates");}).catch(function(){}));
   if(S.WORKFORCE_FILE)jobs.push(fetchText(S.WORKFORCE_FILE).then(function(t){var w={};JamatCal.csvParse(t).forEach(function(r){w[r.manager]={crew:+r.crew_size||0,days:+r.work_days_per_week||6};});if(Object.keys(w).length)WORKFORCE=w;}).catch(function(){}));
   if(!jobs.length)return;
   Promise.all(jobs).then(function(){rebuildCropOptions();render();var n=el("livenote");if(n)n.textContent=used.length?("Live data loaded from shared sources: "+used.join(", ")+"."):"Using bundled sample data (publish the Cycles & Task-log sheets to go live).";});
@@ -1424,6 +1444,7 @@ function initControls(){
     sessionLog.push(ev);
     saveSession();el("af_label").value="";el("af_plot").value="";el("af_lab").value="";el("addform").style.display="none";render();});
   el("printbtn").addEventListener("click",function(){window.print();});
+  if(syncUrl()){var sb=el("syncbtn");sb.style.display="";sb.addEventListener("click",syncToSheet);}
   el("exportbtn").addEventListener("click",function(){var rows=baseLog.concat(sessionLog);var head=LOGCOLS.join(",");var body=rows.map(function(r){return LOGCOLS.map(function(c){var v=(r[c]==null?"":String(r[c]));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(",");}).join("\n");var blob=new Blob([head+"\n"+body+"\n"],{type:"text/csv"});var u=URL.createObjectURL(blob);var a=document.createElement("a");a.href=u;a.download="JamatAgro_TaskLog_"+getReporter().replace(/[^a-z0-9]/gi,"_")+".csv";a.click();});
   el("resetbtn").addEventListener("click",function(){if(sessionLog.length&&!confirm("Clear "+sessionLog.length+" unsynced change(s)? This cannot be undone."))return;sessionLog=[];saveSession();el("undobar").style.display="none";render();});
   window.addEventListener("beforeunload",function(ev){if(sessionLog.length){ev.preventDefault();ev.returnValue="";}});

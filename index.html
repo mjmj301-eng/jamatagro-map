@@ -359,10 +359,11 @@ function computeCalendar(){
   if(mode()==='calendar') render();
 }
 function maybeCal(){ if(TPL&&CYC&&Object.keys(centroids).length) computeCalendar(); }
+function cb_(u){ return u + (u.indexOf('?')>=0?'&':'?') + 'cb=' + Date.now(); }  // cache-buster: a reload always pulls the latest sheet edit
 function loadCalendar(){
-  if(typeof CROP_TEMPLATES_URL!=='undefined'&&CROP_TEMPLATES_URL) fetch(CROP_TEMPLATES_URL).then(r=>r.ok?r.json():Promise.reject()).then(j=>{ TPL=(j&&j.templates)||j; maybeCal(); }).catch(()=>{});
-  if(typeof CROP_CYCLES_URL!=='undefined'&&CROP_CYCLES_URL) Papa.parse(CROP_CYCLES_URL,{download:true,header:true,skipEmptyLines:true,complete:r=>{ CYC=(r.data||[]).filter(x=>x.cycle_id); maybeCal(); },error:()=>{ CYC=CYC||[]; }});
-  if(typeof TASK_LOG_URL!=='undefined'&&TASK_LOG_URL) Papa.parse(TASK_LOG_URL,{download:true,header:true,skipEmptyLines:true,complete:r=>{ TLOG=(r.data||[]).filter(x=>x.entry_id); maybeCal(); },error:()=>{}});
+  if(typeof CROP_TEMPLATES_URL!=='undefined'&&CROP_TEMPLATES_URL) fetch(cb_(CROP_TEMPLATES_URL),{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(j=>{ TPL=(j&&j.templates)||j; maybeCal(); }).catch(()=>{});
+  if(typeof CROP_CYCLES_URL!=='undefined'&&CROP_CYCLES_URL) Papa.parse(cb_(CROP_CYCLES_URL),{download:true,header:true,skipEmptyLines:true,complete:r=>{ CYC=(r.data||[]).filter(x=>x.cycle_id); maybeCal(); },error:()=>{ CYC=CYC||[]; }});
+  if(typeof TASK_LOG_URL!=='undefined'&&TASK_LOG_URL) Papa.parse(cb_(TASK_LOG_URL),{download:true,header:true,skipEmptyLines:true,complete:r=>{ TLOG=(r.data||[]).filter(x=>x.entry_id); maybeCal(); },error:()=>{}});
 }
 
 function colourFor(p){ if(mode()==='calendar'){ return (CAL[p]&&CAL_COLORS[CAL[p].color])||CAL_COLORS.grey; }
@@ -447,11 +448,11 @@ function placeholderGrid(){ const f=[]; const cell=0.0007, sLat=ANCHOR[0]+0.0042
 if(REGISTER_CSV_URL){
   placeholderGrid();
   document.getElementById('hdr').textContent='Live · placeholder grid (trace geometry for true plot shapes)';
-  Papa.parse(REGISTER_CSV_URL,{download:true,header:true,skipEmptyLines:true,
+  Papa.parse(cb_(REGISTER_CSV_URL),{download:true,header:true,skipEmptyLines:true,
     complete:r=>applyCsv(r.data,'attr'),
     error:()=>{ document.getElementById('status').textContent='⚠ Could not load Register sheet — check the published link.'; }});
 }
-if(ACTIVITY_CSV_URL) Papa.parse(ACTIVITY_CSV_URL,{download:true,header:true,skipEmptyLines:true,
+if(ACTIVITY_CSV_URL) Papa.parse(cb_(ACTIVITY_CSV_URL),{download:true,header:true,skipEmptyLines:true,
   complete:r=>applyCsv(r.data,'act'), error:()=>{} });
 
 // Auto-load the traced geometry from the repo (https). Replaces the placeholder grid.
