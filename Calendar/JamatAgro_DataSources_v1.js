@@ -28,5 +28,10 @@ window.JAMAT_SRC = {
 
   /* Agronomic templates + crew sizes — versioned config, stay as repo files (page-relative). */
   CROP_TEMPLATES_FILE: 'JamatAgro_CropTemplates_v3.json',   // relative to whichever page loads it
-  WORKFORCE_FILE:      'JamatAgro_Workforce_v1.csv'
+  WORKFORCE_FILE:      'JamatAgro_Workforce_v1.csv',
+
+  /* Optional — Apps Script Web App URL for the planner to POST completions straight to the
+     Task-log sheet (no CSV export). Deploy JamatAgro_AppsScript_Completion.gs as a Web App and
+     paste its /exec URL here. Leave blank = planner keeps its "Export task_log" button. */
+  SYNC_URL: ''
 };
